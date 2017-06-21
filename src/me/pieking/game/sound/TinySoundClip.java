@@ -78,7 +78,7 @@ public class TinySoundClip extends SoundClip{
 
 	@Override
 	public void stop() {
-		System.out.println("stop " + getName());
+		//System.out.println("stop " + getName());
 		try{
 			baseClip.stop();
 		}catch(Exception e){
@@ -89,7 +89,7 @@ public class TinySoundClip extends SoundClip{
 
 	@Override
 	public void start() {
-		System.out.println("start " + getName());
+		//System.out.println("start " + getName());
 		try{
 			baseClip.setLoop(false);
 			baseClip.play(false);

@@ -8,9 +8,15 @@ import java.io.InputStream;
 public class Fonts {
 
 	public static Font wingDings = new Font("WingDings", 0, 16);
+	public static Font anonymous;
+	public static Font pixeled;
+	public static Font threeDventure;
 	
 	public static void init(){
 		//ex: damage = loadFont("damage.ttf");
+		anonymous = loadFont("Anonymous.ttf");
+		pixeled = loadFont("Pixeled.ttf");
+		threeDventure = loadFont("3Dventure.ttf");
 	}
 	
 	public static Font loadFont(String fileName){

@@ -59,15 +59,6 @@ public class KeyHandler implements KeyListener{
 			toRun.runCommand(args);
 		}
 	}
-	
-	private boolean isNumber(char keyChar) {
-		try{
-			Integer.parseInt(keyChar + "");
-			return true;
-		}catch(Exception e){
-			return false;
-		}
-	}
 
 	@Override
 	public void keyPressed(KeyEvent e) {

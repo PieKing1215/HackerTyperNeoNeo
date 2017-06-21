@@ -530,5 +530,14 @@ public class Utils {
 		return writer.toString();
 	}
 	
+	public static boolean isNumber(char keyChar) {
+		try{
+			Integer.parseInt(keyChar + "");
+			return true;
+		}catch(Exception e){
+			return false;
+		}
+	}
+	
 }
 

@@ -6,15 +6,17 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 import me.pieking.game.gfx.Disp;
+import me.pieking.game.gfx.Fonts;
 import me.pieking.game.gfx.Render;
+import me.pieking.game.sound.Sound;
 
 public class Game {
 
 	private static final int WIDTH = 800;
 	private static final int HEIGHT = 600;
 	
-	private static String name = "GameTemplate";
-	private static String version = "0.0.0-r0";
+	private static String name = "Hacker Typer Neo NEO";
+	private static String version = "0.0.0-r1";
 	
 	private static boolean running = false;
 	
@@ -25,6 +27,7 @@ public class Game {
 	
 	private static Disp disp;
 	private static int time = 0;
+	private static double nsPerTick = 1e9 / 60d;
 	
 	public static void main(String[] args) {
 		run();
@@ -37,8 +40,6 @@ public class Game {
 		long now = System.nanoTime();
 		
 		double delta = 0d;
-		
-		double nsPerTick = 1e9 / 60d;
 		
 		long timer = System.currentTimeMillis();
 		
@@ -81,10 +82,7 @@ public class Game {
 				frames = 0;
 				ticks = 0;
 			}
-			
-			
 		}
-		
 	}
 	
 	private static void init(){
@@ -104,11 +102,19 @@ public class Game {
 		frame.add(disp);
 		
 		frame.setVisible(true);
+		
+		Sound.init();
+		Fonts.init();
+		
 	}
 	
 	private static void tick(){
 		//System.out.println(fps + " " + tps);
 		frame.setTitle(name + " v" + version + " | " + fps + " FPS " + tps + " TPS");
+		
+		if(time % 120 == 0){
+			Sound.soundTest();
+		}
 		
 		time++;
 	}
@@ -127,11 +133,35 @@ public class Game {
 	}
 
 	public static int getTime() {
-		return time ;
+		return time;
 	}
 	
 	public static void stop(int status){
 		System.exit(status);
+	}
+	
+	public static int getWidth(){
+		return WIDTH;
+	}
+	
+	public static int getHeight(){
+		return HEIGHT;
+	}
+	
+	public static Disp getDisp(){
+		return disp;
+	}
+	
+	public static JFrame getFrame(){
+		return frame;
+	}
+	
+	public static void setTPS(int tps){
+		nsPerTick = 1e9 / (double)tps;
+	}
+	
+	public static double getTPS(){
+		return 1e9 / nsPerTick;
 	}
 	
 }
