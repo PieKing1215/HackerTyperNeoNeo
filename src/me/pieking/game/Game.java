@@ -5,6 +5,10 @@ import java.awt.Dimension;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
+import me.pieking.game.command.Command;
+import me.pieking.game.console.Console;
+import me.pieking.game.events.KeyHandler;
+import me.pieking.game.events.MouseHandler;
 import me.pieking.game.gfx.Disp;
 import me.pieking.game.gfx.Fonts;
 import me.pieking.game.gfx.Render;
@@ -28,6 +32,11 @@ public class Game {
 	private static Disp disp;
 	private static int time = 0;
 	private static double nsPerTick = 1e9 / 60d;
+	
+	private static Console mainConsole;
+	
+	private static KeyHandler keyHandler;
+	private static MouseHandler mouseHandler;
 	
 	public static void main(String[] args) {
 		run();
@@ -98,6 +107,13 @@ public class Game {
 		frame.setLocationRelativeTo(null);
 		
 		disp = new Disp(WIDTH, HEIGHT, WIDTH, HEIGHT);
+
+		keyHandler = new KeyHandler();
+		disp.addKeyListener(keyHandler);
+		
+		mouseHandler = new MouseHandler();
+		disp.addMouseListener(mouseHandler);
+		disp.addMouseWheelListener(mouseHandler);
 		
 		frame.add(disp);
 		
@@ -105,16 +121,20 @@ public class Game {
 		
 		Sound.init();
 		Fonts.init();
+		Command.registerDefaultCommands();
 		
+		mainConsole = new Console();
+		mainConsole.setMaxLines(64);
 	}
 	
 	private static void tick(){
-		//System.out.println(fps + " " + tps);
 		frame.setTitle(name + " v" + version + " | " + fps + " FPS " + tps + " TPS");
 		
-		if(time % 120 == 0){
-			Sound.soundTest();
-		}
+//		if(time % 120 == 0){
+//			mainConsole.write(time + "");
+//		}
+		
+		mainConsole.tick();
 		
 		time++;
 	}
@@ -162,6 +182,22 @@ public class Game {
 	
 	public static double getTPS(){
 		return 1e9 / nsPerTick;
+	}
+	
+	public static Console getMainConsole(){
+		return mainConsole;
+	}
+	
+	public static KeyHandler keyHandler(){
+		return keyHandler;
+	}
+	
+	public static MouseHandler mouseHandler(){
+		return mouseHandler;
+	}
+
+	public static Console focusedConsole() {
+		return getMainConsole();
 	}
 	
 }

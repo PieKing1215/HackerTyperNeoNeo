@@ -9,6 +9,8 @@ import java.util.List;
 
 import javax.swing.SwingUtilities;
 
+import me.pieking.game.Game;
+
 public class MouseHandler implements MouseListener, MouseWheelListener{
 
 	private List<MouseButton> pressed = new ArrayList<MouseButton>();
@@ -70,7 +72,7 @@ public class MouseHandler implements MouseListener, MouseWheelListener{
 
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {
-		
+		Game.focusedConsole().scroll(e);
 	}
 	
 }

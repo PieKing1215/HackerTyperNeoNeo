@@ -1,19 +1,16 @@
 package me.pieking.game.events;
 
-import java.awt.HeadlessException;
 import java.awt.Point;
-import java.awt.Toolkit;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import me.pieking.game.Game;
 import me.pieking.game.command.Command;
+import me.pieking.game.console.Console;
 
 public class KeyHandler implements KeyListener{
 
@@ -21,9 +18,8 @@ public class KeyHandler implements KeyListener{
 	public Point lastMousePos;
 	public boolean inInventory;
 	
-	public static boolean inCommandThing = false;
+	public static final boolean inCommandThing = true;
 	
-	public static String typing = "";
 	public static long lastType = 0;
 	public static int typeTime = 800;
 	
@@ -31,16 +27,26 @@ public class KeyHandler implements KeyListener{
 	
 	public void keyJustPressed(KeyEvent e){
 		if(e.getKeyCode() == KeyEvent.VK_ESCAPE){
-			typing = "";
-			inCommandThing = false;
+			Game.focusedConsole().typing = "";
+			//inCommandThing = false;
 		}else if(e.getKeyCode() == KeyEvent.VK_ENTER){
-			runCommand(typing);
-			typing = "";
-			inCommandThing = false;
+			Game.focusedConsole().enter();
+		}else if(e.getKeyCode() == KeyEvent.VK_LEFT){
+			Game.focusedConsole().left();
+		}else if(e.getKeyCode() == KeyEvent.VK_RIGHT){
+			Game.focusedConsole().right();
 		}
 	}
 	
+	public static Command getCommand(String label){
+		return commands.get(label);
+	}
+	
 	public static void runCommand(String cmd){
+		runCommand(Game.focusedConsole(), cmd);
+	}
+	
+	public static void runCommand(Console console, String cmd){
 		String[] split = cmd.split(" ");
 		String   label = split[0];
 		String[] args  = new String[]{};
@@ -48,15 +54,18 @@ public class KeyHandler implements KeyListener{
 			args = cmd.substring(label.length() + 1).split(" ");
 		}catch(Exception e1){}
 		
-		runCommand(label, new ArrayList<String>(Arrays.asList(args)));
+		runCommand(console, label, new ArrayList<String>(Arrays.asList(args)));
 	}
 	
 	public static void runCommand(String label, List<String> args) {
-
+		runCommand(Game.focusedConsole(), label, args);
+	}
+	
+	public static void runCommand(Console console, String label, List<String> args) {
 		Command toRun = commands.get(label);
 
 		if (toRun != null) {
-			toRun.runCommand(args);
+			toRun.runCommand(console, args);
 		}
 	}
 
@@ -79,37 +88,7 @@ public class KeyHandler implements KeyListener{
 	public void keyTyped(KeyEvent e) {
 		long now = System.currentTimeMillis();
     	if(now - lastType < typeTime || inCommandThing){
-    		if((int)e.getKeyChar() == KeyEvent.VK_BACK_SPACE /*http://stackoverflow.com/a/15693905*/){
-    			if(typing.length() > 0){
-    				typing = typing.substring(0, typing.length() - 1);
-    				//if(inCommandThing) Sound.playSound(Sound.voiceGenericB, 0.5f);
-    			}
-    		}else if((int)e.getKeyChar() == KeyEvent.VK_ESCAPE /*http://stackoverflow.com/a/15693905*/){
-    			typing = "";
-    		}else if((int)e.getKeyChar() != KeyEvent.VK_ENTER && !pressed.contains(KeyEvent.VK_CONTROL)){
-    			typing = typing + e.getKeyChar();
-    			//if(inCommandThing) Sound.playSound(Sound.voiceGenericB, 0.5f);
-    		}else if(pressed.contains(KeyEvent.VK_CONTROL)){
-    			//System.out.println("aaaaaaaaa");
-    			if((int)e.getKeyChar() == 22){
-    				//System.out.println("ooooooo");
-    				try {
-    					String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor); 
-						typing = typing + data;
-						//if(inCommandThing) Sound.playSound(Sound.voiceGenericB, 0.5f);
-					}
-					catch (HeadlessException | UnsupportedFlavorException | IOException e1) {
-						e1.printStackTrace();
-					}
-    			}
-    		}
-    	}else{
-    		if((int)e.getKeyChar() != KeyEvent.VK_BACK_SPACE && (int)e.getKeyChar() != KeyEvent.VK_ESCAPE/*http://stackoverflow.com/a/15693905*/){
-    			typing = "" + e.getKeyChar();
-    			//if(inCommandThing) Sound.playSound(Sound.voiceGenericB, 0.5f);
-    		}else{
-    			typing = "";
-    		}
+    		Game.focusedConsole().type(e);
     	}
     	lastType = now;
 	}

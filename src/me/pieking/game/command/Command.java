@@ -1,7 +1,9 @@
 package me.pieking.game.command;
 
+import java.awt.event.KeyEvent;
 import java.util.List;
 
+import me.pieking.game.console.Console;
 import me.pieking.game.events.KeyHandler;
 
 public abstract class Command {
@@ -9,6 +11,8 @@ public abstract class Command {
 	public static void registerDefaultCommands(){
 		registerCommand(new CommandHelp());
 		registerCommand(new CommandReload());
+		registerCommand(new CommandClear());
+		registerCommand(new CommandPause());
 	}
 	
 	/**
@@ -20,18 +24,24 @@ public abstract class Command {
 	 * (Note that if the command was already registered, the new one will override it.)
 	 */
 	public static boolean registerCommand(Command com){
-		System.out.println(com.label + " " + com);
-		return KeyHandler.commands.put(com.label, com) != null;
+		for(String l : com.label){
+			KeyHandler.commands.put(l, com);
+		}
+		return true; //TODO? always successful
 	}
 	
-	public final String label;
+	public final String[] label;
 	public String usage = "No usage provided.";
 	public String desc = "No description provided.";
 	
-	public Command(String label){
+	public boolean running = false;
+	
+	public Command(String... label){
 		this.label = label;
 	}
 	
-	public abstract boolean runCommand(List<String> args);
+	public abstract boolean runCommand(Console console, List<String> args);
+	
+	public void type(KeyEvent ev){}
 	
 }

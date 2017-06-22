@@ -539,5 +539,74 @@ public class Utils {
 		}
 	}
 	
+	public static Color parseColor(String c) {
+		Color col = null;
+		switch(c){
+		case "\\W":
+		case "¶0": //¶0 \W
+			col = new Color(255, 255, 255); //white
+			break;
+		case "\\Y":
+		case "¶1": //¶1 \Y
+			col = new Color(255, 255, 0); //yellow
+			break;
+		case "\\B":
+		case "¶2": //¶2 \B
+			col = new Color(0, 0, 255); //blue
+			break;
+		case "\\L":
+		case "¶3": //¶3 \L
+			col = new Color(14, 192, 253); //cyan
+			break;
+		case "\\G":
+		case "¶4": //¶4 \G
+			col = new Color(0, 255, 0); //green
+			break;
+		case "¶5": //¶5
+			col = Color.MAGENTA;
+			break;
+		case "\\O":
+		case "¶6": //¶6 \O
+			col = new Color(255, 160, 64); //orange
+			break;
+		case "\\R":
+		case "¶7": //¶7 \R
+			col = new Color(255, 0, 0); //red
+			break;
+		case "\\p":
+		case "¶8": //¶8 \p
+			col = new Color(255, 187, 212); //pink
+			break;
+		case "\\X":
+		case "¶9": //¶9 \X
+			col = new Color(0, 0, 0); //black
+			break;
+		case "¶A": //¶A
+			col = Color.DARK_GRAY;
+			break;
+		case "¶B": //¶B
+			col = Color.GRAY;
+			break;
+		case "¶C": //¶C
+			col = Color.LIGHT_GRAY;
+			break;
+		case "\\P":
+		case "¶D": //¶D \P
+			col = new Color(255, 0, 255); //Purple
+			break;
+		case "¶E": //¶E
+			col = new Color(127, 127, 0); //Gold
+			break;
+		case "¶F": //¶F
+			col = new Color(0, 127, 0); //Dark Green
+			break;
+		case "\\r":
+		case "¶G": //¶G \r
+			col = Utils.rainbowColor(0.1f, 0); //Rainbow
+			break;
+		}
+		return col;
+	}
+	
 }
 
