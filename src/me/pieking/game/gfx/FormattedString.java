@@ -13,6 +13,7 @@ public class FormattedString {
 
 	static {
 		letterGlitch = new boolean[20];
+		letterGlitch2 = new boolean[20];
 		updateRand();
 	}
 	
@@ -93,8 +94,11 @@ public class FormattedString {
 			}else{
 				alwaysRaw = false;
     			
-    			for(int i = 0; i < letterGlitch.length; i++){
-    				letterGlitch[i] = false;
+				for(int i = 0; i < letterGlitch.length; i++){
+					letterGlitch[i] = false;
+				}
+				
+    			for(int i = 0; i < letterGlitch2.length; i++){
     				letterGlitch2[i] = false;
     			}
 			}
