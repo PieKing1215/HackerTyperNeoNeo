@@ -8,5 +8,6 @@
 	<classpathentry kind="lib" path="res/lib/TinySound/lib/vorbisspi1.0.3.jar"/>
 	<classpathentry kind="lib" path="res/lib/TinySound/tinysound-1.1.1-src.jar"/>
 	<classpathentry kind="lib" path="res/lib/TinySound/tinysound-1.1.1.jar"/>
+	<classpathentry kind="lib" path="res/lib/commons-io-2.5.jar" sourcepath="res/lib/commons-io-2.5-src.zip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

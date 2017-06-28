@@ -6,6 +6,7 @@ import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import me.pieking.game.Game;
@@ -23,7 +24,7 @@ public class KeyHandler implements KeyListener{
 	public static long lastType = 0;
 	public static int typeTime = 800;
 	
-	public static HashMap<String, Command> commands = new HashMap<String, Command>();
+	public static LinkedHashMap<String, Command> commands = new LinkedHashMap<String, Command>();
 	
 	public void keyJustPressed(KeyEvent e){
 		if(e.getKeyCode() == KeyEvent.VK_ESCAPE){

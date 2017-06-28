@@ -3,7 +3,7 @@ package me.pieking.game.gfx;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
-import java.util.StringTokenizer;
+import java.awt.Graphics2D;
 
 import me.pieking.game.Game;
 import me.pieking.game.Rand;
@@ -11,11 +11,12 @@ import me.pieking.game.Utils;
 
 public class FormattedString {
 
-	private static Sprite inf = Images.getSprite("source/sprites/spr_infinitysign_0.png");
+	static {
+		letterGlitch = new boolean[20];
+		updateRand();
+	}
 	
 	private String baseString;
-
-	private int[] shakeMovementsX, shakeMovementsY;
 
 	private TextEffect effect = TextEffect.NONE;
 	
@@ -25,6 +26,10 @@ public class FormattedString {
 	
 	private Font f;
 	
+	public int lastLineSize = 0;
+	public String broken_f;
+	public String broken;
+	
 	/**
 	 * Key:<br>
 	 * <b>&</b> = Next Line<br>
@@ -32,13 +37,9 @@ public class FormattedString {
 	 */
 	public FormattedString(String baseString){
 		this.setRawString(baseString);
-		//System.out.println(this.baseString);
-		
-		shakeMovementsX = new int[baseString.length()];
-		shakeMovementsY = new int[baseString.length()];
 	}
 	
-	public void renderFormatted(Graphics g, int x, int y){
+	public void renderFormatted(Graphics2D g, int x, int y){
 		renderFormatted(g, x, y, 1);
 	}
 	
@@ -51,195 +52,166 @@ public class FormattedString {
 	 * Credit to <a href="https://stackoverflow.com/a/7528259">https://stackoverflow.com/a/7528259</a>.
 	 */
 	public static String addLinebreaks(String input, int maxLineLength, boolean removeSpecial) {
-	    StringTokenizer tok = new StringTokenizer(input, " ");
 	    StringBuilder output = new StringBuilder(input.length());
 	    int lineLen = 0;
-	    while (tok.hasMoreTokens()) {
-	        String word = tok.nextToken() + " ";
 
-	        int length = word.length();
-	        
-	        if(removeSpecial) {
-	        	length = word.replaceAll("\\\\.", "").length();
-	        }
+	    String[] spl = input.split(" (?! )"); // split at spaces before non-spaces (preserves multiple-space gaps)
+	    
+	    for (String s : spl) {
+	        String word = s + " ";
+
+	        int length = (removeSpecial ? strip(word) : word).length();
 	        
 	        if (lineLen + length > maxLineLength) {
 	            output.append("\n");
 	            lineLen = 0;
 	        }
+	        
 	        output.append(word);
 	        lineLen += length;
 	    }
+	    
 	    return output.toString();
 	}
 	
-	public void renderFormatted(Graphics g, int x, int y, int padding){
+	public static boolean alwaysRaw = false;
+	public static boolean[] letterGlitch = new boolean[20];
+	public static boolean[] letterGlitch2 = new boolean[20];
+	
+	public static void updateRand(){
+		int glitchLevels = Game.glitchLevels;
+		if(Game.getTime() % 10 == 0){
+			if(glitchLevels > 0){
+    			alwaysRaw = Rand.getRand().nextBoolean() && Rand.oneIn((100 - glitchLevels)/2);
+    			
+    			for(int i = 0; i < letterGlitch.length; i++){
+    				letterGlitch[i] = Rand.getRand().nextBoolean() && Rand.oneIn((100 - glitchLevels));
+    				if(glitchLevels < 20) letterGlitch[i] = letterGlitch[i] && Rand.oneIn(4);
+    				letterGlitch2[i] = Rand.getRand().nextBoolean() && Rand.oneIn((100 - glitchLevels));
+    				if(glitchLevels < 20) letterGlitch2[i] = letterGlitch2[i] && Rand.oneIn(4);
+    			}
+			}else{
+				alwaysRaw = false;
+    			
+    			for(int i = 0; i < letterGlitch.length; i++){
+    				letterGlitch[i] = false;
+    				letterGlitch2[i] = false;
+    			}
+			}
+		}
+	}
+	
+	public void addBreaks(){
+		lastLineSize = Game.focusedConsole().charPerLine;
+		broken = addLinebreaks(getRawString(), Game.focusedConsole().charPerLine, false);
+		broken_f = addLinebreaks(getRawString(), Game.focusedConsole().charPerLine, true);
+	}
+	
+	public void renderFormatted(Graphics2D g, int x, int y, int padding){
 
+		if(alwaysRaw){
+			renderRaw(g, x, y, padding);
+			return;
+		}
+		
 		currColor = g.getColor();
 		
+		if(lastLineSize != Game.focusedConsole().charPerLine) addBreaks();
+		
 //		String[] lines = getRawString().split("(?<=\\G.{54})"); //https://stackoverflow.com/a/3761521
-		String[] lines = addLinebreaks(getRawString(), Game.focusedConsole().charPerLine).split("\n"); //https://stackoverflow.com/a/3761521
+		String[] lines = broken_f.split("\n");
+		
+		if(f != null) g.setFont(f);
 		
 		for(int l = 0; l < lines.length; l++){
 		
 			widthPrev = 0;
 			
 			String line = lines[l];
+			int lineLength = line.length();
 			
-			for(int i = 0; i < line.length(); i++){
+//			long total = 0;
+			
+			for(int i = 0; i < lineLength; i++){
+//				long start = System.nanoTime();
 				
-				int globalIndex = i;
-				if(l > 0) globalIndex += lines[l-1].length();
+				char text = line.charAt(i);
+				String textS = text + "";
+				char before = '\0';
 				
-				String text = line.charAt(i) + "";
-				Color col = null;
-				
-				String charBefore = "";
-				
-				if(i > 0) charBefore = line.charAt(i-1) + "";
+				if(i > 0) before = line.charAt(i-1);
 				
 				boolean display = true;
 				
-				if(text.equals("\\") || text.equals("�")){
-					if(i+1 < line.length()){
-						String code = line.charAt(i+1) + "";
-						col = Utils.parseColor(text + code);
+				if(text == '\\' || text == '¶'){
+					if(i+1 < lineLength) {
+						currColor = Utils.parseColor(textS + line.charAt(i+1));
+						g.setColor(currColor);
 					}
-					
 					display = false;
 				}
 				
-				if(charBefore.equals("\\") || charBefore.equals("�") || text.equals("^") || charBefore.equals("^")) display = false;
+				if(before == '\\' || before == '¶' || before == '^' || text == '^') display = false;
 				
 				int xOffset = widthPrev;
 				
-				if(display){
-					if(getFont() != null){
-						//System.out.println("f");
-						if(text.equals("\u221E")){
-							widthPrev += (inf.getWidth() * 2) + 2 + padding;
-						}else{
-							widthPrev += g.getFontMetrics(getFont()).stringWidth(text) + padding;
-						}
-					}else{
-						if(text.equals("\u221E")){
-							widthPrev += (inf.getWidth() * 2) + 2 + padding;
-						}else{
-							widthPrev += g.getFontMetrics().stringWidth(text) + padding;
-						}
-					}
-				}
-				
-				if(getEffect() == TextEffect.TWITCH){
-					if(Game.getTime() % 4 == 0){
-						for(int so = 0; so < getRawString().length(); so++){
-							shakeMovementsX[so] = Rand.range(-1, 1);
-							shakeMovementsY[so] = Rand.range(-1, 1);
-						}
-					}
-				}else if(getEffect() == TextEffect.SHAKE){
-					if(Game.getTime() % 60 == 0){
-						for(int so = 0; so < getRawString().length(); so++){
-							if(Rand.oneIn(1000)) shakeMovementsX[so] = Rand.range(-2, 2);
-							if(Rand.oneIn(1000)) shakeMovementsY[so] = Rand.range(-2, 2);
-						}
-					}
-				}
-				
-				int yOffset = Math.round((float) ((g.getFont().getSize() * 1.15) * l));
-				
-				int xo = 0;
-				int yo = 0;
-				
-				switch(getEffect()){
-				case SHAKE:
-					xo = shakeMovementsX[globalIndex];
-					yo = shakeMovementsY[globalIndex];
-					break;
-				case HEAVY_WAVE:
-					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*5);
-					yo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*5);
-					break;
-				case TWITCH:
-					xo = shakeMovementsX[globalIndex] * 2;
-					yo = shakeMovementsY[globalIndex] * 2;
-					break;
-				case NONE:
-					
-					break;
-				case WAVE:
-					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*2);
-					yo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*2);
-					break;
-				case SMALL_CIRCLE:
-					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f));
-					yo = Math.round((float) Math.cos((Game.getTime() + 3*i) / 10f));
-					break;
-				case LARGE_CIRCLE:
-					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*3);
-					yo = Math.round((float) Math.cos((Game.getTime() + 3*i) / 10f)*3);
-					break;
-				case ASRIEL_DREEMURR:
-					if(getFont() != null) g.setFont(getFont());
-					
-					for(int i2 = 0; i2 < 5; i2++){
-						g.setColor(new Color(1f, 1f, 1f, (1f - (i2 / 5f)) * 0.5f));
-						xo = Rand.range(-10, 10);
-						yo = Rand.range(-10, 10);
-						
-						if(display) g.drawString(text, x + xOffset + xo, y + yOffset + yo);
-					}
-					
-					xo = Rand.range(-1, 2);
-					yo = Rand.range(-1, 2);
-					
-					currColor = Color.WHITE;
-					break;
-				case GASTER:
-					if(getFont() != null) g.setFont(getFont());
-					
-					g.setColor(new Color(g.getColor().getRed(), g.getColor().getGreen(), g.getColor().getBlue(), 127));
-					String text2 = text;
-					if(Rand.range(0, 0) == 0){
-//						g.setFont(Fonts.wingDings);
-//						text2 = Fonts.execFormatValue(text2, Fonts.wingDings);
-					}else{
-						if(getFont() != null) g.setFont(getFont());
-					}
-					
-					xo = Rand.range(-1, 2);
-					yo = Rand.range(-1, 2);
-					
-					if(display) g.drawString(text2, x + xOffset + xo, y + yOffset + yo);
-					
-					xo = Rand.range(-1, 2);
-					yo = Rand.range(-1, 2);
-					break;
-				default:
-					break;
-				}
-				
-				if(col != null) currColor = col;
+//				total += System.nanoTime() - start;
 				
 				if(display){
-					g.setColor(currColor);
-					Font f = getFont();
-					if(f != null) g.setFont(f);
-					
-					if(getEffect() == TextEffect.GASTER){
-						if(Rand.range(0, 2) == 0){
-//							g.setFont(Fonts.wingDings);
-//							text = Fonts.execFormatValue(text, Fonts.wingDings);
-						}
-					}
-					
-					if(text.equals("\u221E")){
-						g.drawImage(inf.getImage(), x + xOffset + xo, y + yOffset + yo - (inf.getHeight()*2), inf.getWidth() * 2, inf.getHeight() * 2, null);
-					}else{
-						g.drawString(text, x + xOffset + xo, y + yOffset + yo);
-					}
+					widthPrev += g.getFontMetrics().stringWidth(textS) + padding;
+				
+    				int yOffset = Math.round((float) ((g.getFont().getSize() * 1.15) * l));
+    				
+    				int xo = 0;
+    				int yo = 0;
+    				
+    				switch(getEffect()){
+    				case HEAVY_WAVE:
+    					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*5);
+    					yo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*5);
+    					break;
+    				case WAVE:
+    					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*2);
+    					yo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*2);
+    					break;
+    				case SMALL_CIRCLE:
+    					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f));
+    					yo = Math.round((float) Math.cos((Game.getTime() + 3*i) / 10f));
+    					break;
+    				case LARGE_CIRCLE:
+    					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*3);
+    					yo = Math.round((float) Math.cos((Game.getTime() + 3*i) / 10f)*3);
+    					break;
+    				case NONE:
+    				default:
+    					break;
+    				}
+    				
+    				byte[] bytes = textS.getBytes();
+    				
+    				try{
+        				int randIndex = (i + (y + yOffset + x + xOffset + xo)) % letterGlitch.length;
+        				boolean glitch = letterGlitch[randIndex];
+        				if(glitch && !textS.equals(" ")){
+        					bytes[0]++;
+        				}
+        				
+        				if(Game.glitchLevels > 75){
+            				int exclIndex = (i + (y + yOffset*22 + x*((Game.getTime()/10)%60) + xOffset + xo)) % letterGlitch.length;
+            				boolean excl = letterGlitch2[exclIndex];
+            				if(excl) bytes[0] = '!';
+        				}
+        				
+    				}catch(Exception e){}
+    				
+    				textS = new String(bytes);
+    				
+					g.drawString(textS, x + xOffset + xo, y + yOffset + yo);
 				}
+				
 			}
+			
+//			System.out.println(total/lineLength);
 		}
 	}
 	
@@ -249,80 +221,35 @@ public class FormattedString {
 	
 	public void renderRaw(Graphics g, int x, int y, int padding){
 
+		if(lastLineSize != Game.focusedConsole().charPerLine) addBreaks();
 //		String[] lines = getRawString().split("(?<=\\G.{54})"); // https://stackoverflow.com/a/3761521
-		String[] lines = addLinebreaks(getRawString(), Game.focusedConsole().charPerLine, false).split("\n");
+		String[] lines = broken.split("\n");
+		
+		if(f != null) g.setFont(f);
 		
 		for(int l = 0; l < lines.length; l++){
 		
 			widthPrev = 0;
 			
-			for(int i = 0; i < lines[l].length(); i++){
-				
-				int globalIndex = i;
-				try{
-					globalIndex += lines[l-1].length();
-				}catch(ArrayIndexOutOfBoundsException e){}
-				
-				String text = lines[l].charAt(i) + "";
-				Color col = null;
-				
-				boolean display = true;
+			String line = lines[l];
+			int lineLength = line.length();
+			
+			for(int i = 0; i < lineLength; i++){
+				String textS = line.charAt(i) + "";
 				
 				int xOffset = widthPrev;
 				
-				if(display){
-					if(getFont() != null){
-						//System.out.println("f");
-						if(text.equals("\u221E")){
-							widthPrev += (inf.getWidth() * 2) + 2 + padding;
-						}else{
-							widthPrev += g.getFontMetrics(getFont()).stringWidth(text) + padding;
-						}
-					}else{
-						if(text.equals("\u221E")){
-							widthPrev += (inf.getWidth() * 2) + 2 + padding;
-						}else{
-							widthPrev += g.getFontMetrics().stringWidth(text) + padding;
-						}
-					}
-				}
-				
-				if(getEffect() == TextEffect.TWITCH){
-					if(Game.getTime() % 4 == 0){
-						for(int so = 0; so < getRawString().length(); so++){
-							shakeMovementsX[so] = Rand.range(-1, 1);
-							shakeMovementsY[so] = Rand.range(-1, 1);
-						}
-					}
-				}else if(getEffect() == TextEffect.SHAKE){
-					if(Game.getTime() % 60 == 0){
-						for(int so = 0; so < getRawString().length(); so++){
-							if(Rand.oneIn(1000)) shakeMovementsX[so] = Rand.range(-2, 2);
-							if(Rand.oneIn(1000)) shakeMovementsY[so] = Rand.range(-2, 2);
-						}
-					}
-				}
-				
+				widthPrev += g.getFontMetrics().stringWidth(textS) + padding;
+			
 				int yOffset = Math.round((float) ((g.getFont().getSize() * 1.15) * l));
 				
 				int xo = 0;
 				int yo = 0;
 				
 				switch(getEffect()){
-				case SHAKE:
-					xo = shakeMovementsX[globalIndex];
-					yo = shakeMovementsY[globalIndex];
-					break;
 				case HEAVY_WAVE:
 					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*5);
 					yo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*5);
-					break;
-				case TWITCH:
-					xo = shakeMovementsX[globalIndex] * 2;
-					yo = shakeMovementsY[globalIndex] * 2;
-					break;
-				case NONE:
-					
 					break;
 				case WAVE:
 					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*2);
@@ -336,70 +263,26 @@ public class FormattedString {
 					xo = Math.round((float) Math.sin((Game.getTime() + 3*i) / 10f)*3);
 					yo = Math.round((float) Math.cos((Game.getTime() + 3*i) / 10f)*3);
 					break;
-				case ASRIEL_DREEMURR:
-					if(getFont() != null) g.setFont(getFont());
-					
-					for(int i2 = 0; i2 < 5; i2++){
-						g.setColor(new Color(1f, 1f, 1f, (1f - (i2 / 5f)) * 0.5f));
-						xo = Rand.range(-10, 10);
-						yo = Rand.range(-10, 10);
-						
-						if(display) g.drawString(text, x + xOffset + xo, y + yOffset + yo);
-					}
-					
-					xo = Rand.range(-1, 2);
-					yo = Rand.range(-1, 2);
-					
-					currColor = Color.WHITE;
-					break;
-				case GASTER:
-					if(getFont() != null) g.setFont(getFont());
-					
-					g.setColor(new Color(g.getColor().getRed(), g.getColor().getGreen(), g.getColor().getBlue(), 127));
-					String text2 = text;
-					if(Rand.range(0, 0) == 0){
-//						g.setFont(Fonts.wingDings);
-//						text2 = Fonts.execFormatValue(text2, Fonts.wingDings);
-					}else{
-						if(getFont() != null) g.setFont(getFont());
-					}
-					
-					xo = Rand.range(-1, 2);
-					yo = Rand.range(-1, 2);
-					
-					if(display) g.drawString(text2, x + xOffset + xo, y + yOffset + yo);
-					
-					xo = Rand.range(-1, 2);
-					yo = Rand.range(-1, 2);
-					break;
+				case NONE:
 				default:
 					break;
 				}
 				
-				if(col != null){
-					currColor = col;
-				}
+				try{
+    				byte[] bytes = textS.getBytes();
+    				int randIndex = (i + (y + yOffset + x + xOffset + xo)) % letterGlitch.length;
+    				boolean glitch = letterGlitch[randIndex];
+    				if(glitch && !textS.equals(" ")){
+    					bytes[0]++;
+    				}
+    				textS = new String(bytes);
+				}catch(Exception e){}
 				
-				if(display){
-					g.setColor(currColor);
-					if(getFont() != null) g.setFont(getFont());
-					
-					if(getEffect() == TextEffect.GASTER){
-						if(Rand.range(0, 2) == 0){
-//							g.setFont(Fonts.wingDings);
-//							text = Fonts.execFormatValue(text, Fonts.wingDings);
-						}else{
-							if(getFont() != null) g.setFont(getFont());
-						}
-					}
-					
-					if(text.equals("\u221E")){
-						g.drawImage(inf.getImage(), x + xOffset + xo, y + yOffset + yo - (inf.getHeight()*2), inf.getWidth() * 2, inf.getHeight() * 2, null);
-					}else{
-						g.drawString(text, x + xOffset + xo, y + yOffset + yo);
-					}
-				}
+				g.drawString(textS, x + xOffset + xo, y + yOffset + yo);
+				
 			}
+			
+//			System.out.println(total/lineLength);
 		}
 	}
 	
@@ -429,17 +312,22 @@ public class FormattedString {
 
 	public void setRawString(String baseString) {
 		this.baseString = baseString;
+		addBreaks();
 	}
 	
 	public static enum TextEffect {
-        NONE, SMALL_CIRCLE, LARGE_CIRCLE, /** Demonic Flowey's voice */TWITCH, /** Battle flavor text */SHAKE, WAVE, HEAVY_WAVE, ASRIEL_DREEMURR, GASTER; 
+        NONE, SMALL_CIRCLE, LARGE_CIRCLE, WAVE, HEAVY_WAVE; 
     }
 
 	public String getStripped() {
+		return strip(baseString);
+	}
+	
+	public static String strip(String s){
+		String ret = s;
 		
-		String ret = baseString;
 		ret = ret.replaceAll("\\\\.", "");
-		ret = ret.replaceAll("\\�.", "");
+		ret = ret.replaceAll("\\¶.", "");
 		ret = ret.replaceAll("^", "");
 		
 		return ret;

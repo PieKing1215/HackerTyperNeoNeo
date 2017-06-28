@@ -3,9 +3,8 @@ package me.pieking.game.command;
 import java.awt.event.KeyEvent;
 import java.util.List;
 
+import me.pieking.game.Scheduler;
 import me.pieking.game.console.Console;
-import me.pieking.game.gfx.Sprite;
-import me.pieking.game.sound.Sound;
 
 public class CommandPause extends Command{
 
@@ -23,6 +22,11 @@ public class CommandPause extends Command{
 		if(args.size() >= 1){
 			try {
 				int delay = Integer.parseInt(args.get(0));
+
+				Scheduler.delayedTask(() -> {
+					if(running) running = false;
+				}, delay);
+				
 			}catch(NumberFormatException e){
 				console.write("\\RInvalid number: " + args.get(0));
 				ret = false;

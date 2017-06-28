@@ -13,6 +13,17 @@ public abstract class Command {
 		registerCommand(new CommandReload());
 		registerCommand(new CommandClear());
 		registerCommand(new CommandPause());
+		registerCommand(new CommandListFiles());
+		registerCommand(new CommandDir());
+		registerCommand(new CommandTxt());
+		registerCommand(new CommandMkdir());
+		registerCommand(new CommandMkfile());
+		registerCommand(new CommandDel());
+		registerCommand(new CommandCopy());
+		registerCommand(new CommandMove());
+		registerCommand(new CommandExit());
+		registerCommand(new CommandRun());
+		registerCommand(new CommandReboot());
 	}
 	
 	/**
@@ -35,6 +46,7 @@ public abstract class Command {
 	public String desc = "No description provided.";
 	
 	public boolean running = false;
+	public boolean wantsInput = false;
 	
 	public Command(String... label){
 		this.label = label;
@@ -43,5 +55,8 @@ public abstract class Command {
 	public abstract boolean runCommand(Console console, List<String> args);
 	
 	public void type(KeyEvent ev){}
+
+	public void write(String input) {}
+	public void cancel() {}
 	
 }

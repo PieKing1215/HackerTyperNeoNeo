@@ -1,0 +1,309 @@
+' ported from http://www.atariarchives.org/bcc1/showpage.php?page=250
+run "cls"
+L10:  print "HUNT THE WUMPUS"
+L15:  print "BY GREGORY YOB"
+      print "ported from http://www.atariarchives.org/bcc1/showpage.php?page=250"
+      print ""
+L20:  print "INSTRUCTIONS (Y-N)"
+L30:  input I$
+      print "? " + I$
+L40:  if I$="N" then L52
+L50:  sub L1000
+L52:  'skip
+
+data = {2,5,8,1,3,10,2,4,12,3,5,14,1,4,6,5,7,15,6,8,17,1,7,9,8,10,18,2,9,11,10,12,19,3,11,13,12,14,20,4,13,15,6,14,16,15,17,20,7,16,18,9,17,19,11,18,20,13,16,19}
+dataIndex = 0
+
+goto readend
+read:
+ red = data[dataIndex]
+ dataIndex = dataIndex + 1
+return
+readend:
+
+L200: ' -LOCATE L ARRAY ITEMS
+L210: ' -1-YOU,2-WUMPUS,3&4-PITS,5&6-BATS
+L220: L = [6]
+L230: M = [6]
+L240: J = 0
+      jLoop2:
+L250:  rnd 1 L[J]
+       int 20*L[J] L[J]
+       L[J] = L[J]+1
+L260:  M[J] = L[J]
+L270: J=J+1
+      if J < 6 then jLoop2
+      S = data
+     
+L280:  ' -CHECK FOR CROSSOVERS (IE L[1]=L[2],ETC)
+L290: J = 0
+     jLoop3:
+L300:  K = 0
+      kLoop3:
+L310:   if J=K then L330
+L320:   if L[J]=L[K] then L240
+L330:  K=K+1
+      if K < 6 then kLoop3
+L340: J=J+1
+     if J < 6 then jLoop3
+     
+L350:  ' -SET# ARROWS
+L360:  A = 5
+L365:  X = L[1]
+
+L370:  ' -RUN THE GAME
+       print ""
+L375:  print "HUNT THE WUMPUS"
+
+L380:  ' -HAZARD WARNINGS & LOCATION
+L390:  sub L2000
+
+L400:  ' -MOVE OR SHOOT
+L410:  sub L2500
+       'print O
+L420: if O=1 then L440
+      if O=2 then L480
+      if O=0 then L410
+
+L430:  ' -SHOOT
+L440:  sub L3000
+L450:  if F=0 then L390
+       print "OUT OF ARROWS!"
+L460:  goto L500
+
+L470:  ' -MOVE
+L480:  sub L4000
+L490:  if F=0 then L390
+L500:  if F>0 then L550
+L510:  ' -LOSE
+L520:  print "HA HA HA - YOU LOSE!"
+L530:  goto L560
+
+L540:  ' -WIN
+L550:  print "HEE HEE HEE - THE WUMPUS'LL GETCHA NEXT TIME!!"
+L560:  J = 0
+       loop10:
+L570:   L[J]=M[J]
+L580:  J=J+1
+       if J<6 then loop10
+L590:  print "SAME SET-UP (Y-N) OR EXIT (E)"
+L600:  input I$
+       print "? " + I$
+       if I$="E" then L5000
+L610:  if I$#"Y" then L240
+L620:  goto L360
+
+L1000:  ' -INSTRUCTIONS
+L1010:  print "          WELCOME TO 'HUNT THE WUMPUS'"
+L1020:  print "  THE WUMPUS LIVES IN A CAVE OF 20 ROOMS. EACH ROOM"
+L1030:  print "  HAS 3 TUNNELS LEADING TO OTHER ROOMS. (LOOK AT A"
+L1040:  print "  DODECAHEDRON TO SEE HOW THIS WORKS-IF YOU DON'T KNOW"
+L1050:  print "  WHAT A DODECAHEDRON IS, ASK SOMEONE)"
+L1060:  print ""
+L1070:  print "  HAZARDS:"
+L1080:  print "  BOTTOMLESS PITS - TWO ROOMS HAVE BOTTOMLESS PITS IN THEM."
+L1090:  print "     IF YOU GO THERE, YOU FALL INTO THE PIT (& LOSE!)"
+L1100:  print "  SUPER BATS - TWO OTHER ROOMS HAVE SUPER BATS."
+L1110:  print "     IF YOU GO THERE, A BAT GRABS YOU AND TAKES YOU TO SOME"
+L1120:  print "     OTHER ROOM AT RANDOM. (WHICH MIGHT BE TROUBLESOME)"
+L1130:  print ""
+L1140:  print "  WUMPUS:"
+L1150:  print "     THE WUMPUS IS NOT BOTHERED BY THE HAZARDS (HE HAS SUCKER"
+L1160:  print "     FEET AND IS TOO BIG FOR A BAT TO LIFT).  USUALLY"
+L1170:  print "     HE IS ASLEEP. TWO THINGS WAKE HIM UP: YOUR ENTERING"
+L1180:  print "     HIS ROOM OR YOUR SHOOTING AN ARROW."
+L1190:  print "     IF THE WUMPUS WAKES, HE MOVES (P=.75) ONE ROOM"
+L1200:  print "     OR STAYS STILL (P=.25). AFTER THAT, IF HE IS WHERE YOU"
+L1210:  print "     ARE, HE EATS YOU UP (& YOU LOSE!)"
+L1220:  print ""
+L1230:  print "  YOU:"
+L1240:  print "     EACH TURN YOU MAY MOVE OR SHOOT A CROOKED ARROW"
+L1250:  print "     MOVING: YOU CAN GO ONE ROOM (THRU ONE TUNNEL)"
+L1260:  print "     ARROWS: YOU HAVE 5 ARROWS. YOU LOSE WHEN YOU RUN OUT."
+L1270:  print "     EACH ARROW CAN GO FROM 1 TO 5 ROOMS. YOU AIM BY TELLING"
+L1280:  print "     THE COMPUTER THE ROOM#S YOU WANT THE ARROW TO GO TO."
+L1290:  print "       IF THE ARROW CAN'T GO THAT WAY (IE NO TUNNEL) IT MOVES"
+L1300:  print "         AT RANDOM TO THE NEXT ROOM."
+L1310:  print "       IF THE ARROW HITS THE WUMPUS, YOU WIN."
+L1320:  print "       IF THE ARROW HITS YOU, YOU LOSE."
+L1330:  print ""
+L1340:  print "  WARNINGS:"
+L1350:  print "     WHEN YOU ARE ONE ROOM AWAY FROM WUMPUS OR HAZARD,"
+L1360:  print "     THE COMPUTER SAYS:"
+L1370:  print "       WUMPUS-  'I SMELL A WUMPUS'"
+L1380:  print "       BAT   -  'BATS NEARBY'"
+L1390:  print "       PIT   -  'I FEEL A DRAFT'"
+L1400:  print ""
+L1410:  return
+
+L2000:  ' -print LOCATION & HAZARD WARNINGS
+L2010:  print ""
+        print "======================"
+        print ""
+        
+L2020: J = 1 ' FOR J=2 TO 6
+       'print L
+       jLoop4:
+L2030:  K = 0
+        kLoop4:
+         L1 = L[1]
+L2040:   index = ((L1-1)*3)+K
+         'print "" + L1 + " " + J + " " + S[index] + " " + L[J]
+         
+         if S[index]#L[J] then L2110
+L2050:   if J-1 = 1 then L2060
+         if J-1 = 2 then L2080
+         if J-1 = 3 then L2080
+         if J-1 = 4 then L2100
+         if J-1 = 5 then L2100
+L2060:   print "I SMELL A WUMPUS!"
+L2070:   goto L2110
+L2080:   print "I FEEL A DRAFT"
+L2090:   goto L2110
+L2100:   print "BATS NEARBY!"
+L2110:  K=K+1
+       if K < 3 then kLoop4
+L2120: J=J+1
+       if J < 6 then jLoop4
+L2130: print "YOU ARE IN ROOM " + L[1]
+L2140: ind1 = ((X-1)*3)+0
+       ind2 = ((X-1)*3)+1
+       ind3 = ((X-1)*3)+2
+       'print X
+       'print S
+       print "TUNNELS LEAD TO: " + S[ind1] + " " + S[ind2] + " " + S[ind3]
+L2150: print ""
+L2160: return
+
+L2500:  ' -CHOOSE OPTION
+L2510:  print "SHOOT OR MOVE (S-M)"
+L2520:  input I$
+        print "? " + I$
+L2530:  if I$#"S" then L2560
+L2540:  O=1
+L2550:  return
+L2560:  if I$#"M" then L2510
+L2570:  O=2
+L2580:  return
+L2590:  O=0
+L2600:  return
+
+L3000:  ' -ARROW ROUTINE
+L3010:  F=0
+L3020:  ' -PATH OF ARROW
+L3030:  P = [5]
+L3040:  print "NO. OF ROOMS(1-5)"
+L3050:  input J9
+        print "? " + J9
+L3060:  if J9<1 then L3040
+        if J9>5 then L3040
+L3070: K=0
+       kLoop5:
+L3080:  print "ROOM # (OR 'C' FOR CANCEL)"
+L3090:  input I
+        print "? " + I
+        if "C"=I then L2590
+        P[K] = I
+L3095:  if K < 3 then L3115
+L3100:  indK = K-2
+       if P[K]#P[indK] then L3115
+L3105:  print "ARROWS AREN'T THAT CROOKED - TRY ANOTHER ROOM"
+L3110:  goto L3080
+L3115: K=K+1
+       if K < J9 then kLoop5
+L3120: ' -SHOOT ARROW
+L3130: X=L[1]
+L3140: K=0
+       kLoop6:
+L3150:  K1=0
+        k1Loop6:
+L3160:   index = ((X-1)*3)+K1
+         'print "" + index + " " + S[index] + " " + K + " " + P[K] + " " + P
+         if S[index]=P[K] then L3295
+L3170:  K1=K1+1
+        if K1<3 then k1Loop6
+L3180:  ' -NO TUNNEL FOR ARROW
+L3190:  rnd 1 Y
+        int 3*Y Y
+        Y = Y+1
+        index = ((X-1)*3)+Y
+        X=S[index]
+L3200:  goto L3300
+L3210: K=K+1
+       'print "" + K + " " + J9
+       if K<J9 then kLoop6
+L3220:  print "MISSED"
+L3225:  X=L[1]
+L3230:  ' -MOVE WUMPUS
+L3240:  sub L3370
+L3250:  ' -AMMO CHECK
+L3255:  A=A-1
+L3260:  if A>0 then L3280
+L3270:  F=0-1
+L3280:  return
+
+L3290:  ' -SEE if ARROW IS AT L[1] OR L[2]
+L3295:  X=P[K]
+        'print "" + X + " " + L[2] + " " + L[1]
+L3300:  if X#L[2] then L3340
+L3310:  print "AHA! YOU GOT THE WUMPUS!"
+L3320:  F=1
+L3330:  return
+L3340:  if X#L[1] then L3210
+L3350:  print "OUCH! ARROW GOT YOU!"
+L3360:  goto L3270
+L3370:  ' -MOVE WUMPUS ROUTINE
+L3380:  rnd 1 K
+        int 4*K K
+        K = K+1
+L3390:  if K=4 then L3410
+        L2 = L[2]
+L3400:  index = ((L2-1)*3)+K
+        L[2]=S[index]
+L3410:  if L[2]#X then L3440
+L3420:  print "TSK TSK TSK- WUMPUS GOT YOU!"
+L3430:  F=0-1
+L3440:  return
+
+L4000:  ' - MOVE ROUTINE
+L4010:  F=0
+L4020:  print "WHERE TO"
+L4030:  input X
+        print "? " + X
+L4040:  if X<1 then L4020
+        if X>20 then L4020
+L4050:  K=0
+        loop11:
+L4060:   ' - CHECK if LEGAL MOVE
+L4070:   index = ((L[1]-1)*3)+K
+         'print "" + x + " " + index + " " + S[index]
+        if S[index]=X then L4130
+L4080:  K=K+1
+        if K<3 then loop11
+L4090:  if X=L[1] then L4130
+L4100:  print "NOT POSSIBLE -"
+L4110:  goto L4020
+L4120:  ' -CHECK FOR HAZARDS
+L4130:  L[1]=X
+L4140:  ' -WUMPUS
+L4150:  if X#L[2] then L4220
+L4160:  print "...OOPS! BUMPED A WUMPUS!"
+L4170:  ' -MOVE WUMPUS
+L4180:  sub L3380
+L4190:  if F=0 then L4220
+L4200:  return
+L4210:  ' -PIT
+L4220:  'print "" + X + " " + L[3] + " " + L[4]
+        if (X#L[3])+(X#L[4])=2 then L4270
+L4230:  print "YYYIIIIEEEE . . . FELL IN PIT"
+L4240:  F=0-1
+L4250:  return
+L4260:  ' -BATS
+L4270:  if (X#L[5])+(X#L[6])=2 then L4310
+L4280:  print "ZAP--SUPER BAT SNATCH! ELSEWHEREVILLE FOR YOU!"
+L4290:  rnd 1 X
+        int 20*X X
+        X=X+1
+L4300:  goto L4130
+L4310:  return
+L5000:  ' END

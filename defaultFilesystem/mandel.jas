@@ -1,0 +1,87 @@
+          MAXITERATIONS = 32
+          y = (0 - (5 / 4))
+
+yloop:    ' reset x
+          x = 0 - 2
+          line = ""
+xloop:  
+          iter = 0
+          x0 = x
+          y0 = y
+          
+          
+iterloop: ' iterate the complex function p <- p^2 + seed
+          ' square the complex number
+          x1 = (x0 * x0) - (y0 * y0)
+          y1 = 2 * x0 * y0
+          
+          ' add the seed
+          x1 = x1 + x
+          y1 = y1 + y
+          
+          x0 = x1
+          y0 = y1
+          
+          ' stop if the point escaped
+          d = (x0 * x0) + (y0 * y0)
+          if d > 4 then enditer
+
+          ' else, iterate
+          iter = iter + 1
+          
+          ' if we've iterated enough, give up
+          if iter = MAXITERATIONS then enditer
+          
+          goto iterloop
+          
+enditer:  ' figure out what "color" to draw the pixel
+          if iter < 2 then draw0
+          if iter < 5 then draw1
+          if iter < 8 then draw2
+          if iter < 12 then draw3
+          if iter < 15 then draw4
+          if iter < 18 then draw5
+          if iter < 21 then draw6
+          if iter < 24 then draw7
+          if iter < 27 then draw8
+          if iter < 30 then draw9
+          
+          pixel = "\X@"
+          goto draw
+          
+draw0:    pixel = " "
+          goto draw
+draw1:    pixel = "\1-"
+          goto draw
+draw2:    pixel = "\2+"
+          goto draw
+draw3:    pixel = "\3="
+          goto draw
+draw4:    pixel = "\4*"
+          goto draw
+draw5:    pixel = "\5#"
+          goto draw
+draw6:    pixel = "\6%"
+          goto draw
+draw7:    pixel = "\7$"
+          goto draw
+draw8:    pixel = "\8@"
+          goto draw
+draw9:    pixel = "\W@"
+          goto draw
+          
+                    
+draw:     ' draw the pixel
+          line = line + pixel
+          goto enddraw
+
+enddraw:  ' move to the next x position
+          x = x + (1 / 28) ' was (1 / 29)
+          if x < (3 / 4) then xloop
+        
+          ' print the completed line
+          print line
+          
+          ' move to the next y position
+          y = y + (1 / 14)
+          if y < (5 / 4) then yloop

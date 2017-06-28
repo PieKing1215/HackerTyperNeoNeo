@@ -9,7 +9,7 @@ import me.pieking.game.sound.Sound;
 public class CommandReload extends Command{
 
 	public CommandReload() {
-		super("reload");
+		super("reload", "rl");
 		
 		desc  = "Reload parts of the game.";
 		usage = "reload <textures|sounds|commands>";

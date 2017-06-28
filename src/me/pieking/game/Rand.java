@@ -22,12 +22,8 @@ public class Rand {
 	}
 	
 	public static boolean oneIn(int x){
-		int r = getRand().nextInt((x - 0) + 1) + 0;
-		if(r==0){
-			return true;
-		}else{
-			return false;
-		}
+		if(x < 1) x = 1;
+		return range(1, x) == 1;
 	}
 	
 	public static long getSeed(){

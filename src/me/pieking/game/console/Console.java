@@ -1,22 +1,27 @@
 package me.pieking.game.console;
 
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.HeadlessException;
+import java.awt.Shape;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseWheelEvent;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.lang.model.type.NullType;
-
 import me.pieking.game.Game;
+import me.pieking.game.Rand;
+import me.pieking.game.Scheduler;
 import me.pieking.game.command.Command;
+import me.pieking.game.command.CommandListFiles;
+import me.pieking.game.command.CommandRun;
 import me.pieking.game.events.KeyHandler;
 import me.pieking.game.gfx.Fonts;
 import me.pieking.game.gfx.FormattedString;
@@ -32,7 +37,7 @@ public class Console {
 	private Command runningCommand;
 	
 	public String typing = "";
-	public int cursorIndex = 0;
+	public int cursorIndex = typing.length();
 	
 	public int blinkTimer = 0;
 	public int fontSize = 20;
@@ -42,15 +47,52 @@ public class Console {
 	
 	public String prefix = "> ";
 	
-	public Console() {}
+	public File currDir;
+	public boolean canInput = false;
+	
+	public Console() {
+		setDirectory("");
+	}
+	
+	public void changeDirectory(String relativeChange){
+		File newDir = new File(currDir, relativeChange);
+		newDir.mkdir();
+		if(newDir.isDirectory()){
+			currDir = newDir;
+		}
+	}
+	
+	public void setDirectory(String str){
+		File newDir = new File(Game.getFileDir(), str);
+		newDir.mkdir();
+		if(newDir.isDirectory()){
+			currDir = newDir;
+		}
+	}
+	
+	public String getDirectory(){
+		try{
+			return currDir.getCanonicalPath().replace(Game.getFileDir().getAbsolutePath(), "");
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+		return currDir.getAbsolutePath().replace(Game.getFileDir().getAbsolutePath(), "");
+	}
 	
 	public void tick(){
 		if(scrollOfs < 0 && lines.isEmpty()) scrollOfs = 0;
 		blinkTimer++;
 		fontSize = 14;
+		maxLines = 128;
 		charPerLine = 78;
 		if(inputDelay > 0) inputDelay--;
-		prefix = "/hacks> ";
+		String dir = getDirectory().replace("\\", "/");
+		if(!dir.startsWith("/")) dir = "/" + dir;
+		if(runningCommand != null && runningCommand.wantsInput){
+			prefix = "? ";
+		}else{
+			prefix = "" + (currDir == null ? "" : dir) + "> ";
+		}
 	}
 	
 	public void render(Graphics2D g){
@@ -120,15 +162,26 @@ public class Console {
 //		System.out.println(thru);
 		
 		if(this.maxScroll >= Game.getHeight()-fontSize*3){
-    		int size = Math.max(minScroll + 600, 32);
+    		int size = Math.max(minScroll + 600, 48);
     		
 //    		System.out.println(size);
     		
-    		int ofs = (int) (thru * (Game.getHeight()-size));
+    		g.setColor(Color.DARK_GRAY);
+    		g.fillRect(Game.getWidth()-8, 0, 8, Game.getHeight());
     		
-    		g.fillRect(Game.getWidth()-4, ofs, 4, size);
+    		int ofs = (int) (thru * (Game.getHeight()-size));
+    		g.setColor(Color.GRAY);
+    		g.fill3DRect(Game.getWidth()-8, ofs, 8, size, true);
 		}
 		
+		if(runningCommand != null && runningCommand.running){
+    		g.setColor(Color.WHITE);
+    		int runOfs = 80-(Game.getTime()%80) - 44;
+    		Shape s = g.getClip();
+    		g.setClip(Game.getWidth()-20, 0, 10, 30);
+    		g.fillRect(Game.getWidth()-17, runOfs, 4, 40);
+    		g.setClip(s);
+		}
 		//System.out.println(scrollOfs);
 		
 	}
@@ -192,7 +245,9 @@ public class Console {
 	}
 	
 	public boolean awaitingInput(){
+		if(!canInput ) return false;
 		if(runningCommand == null) return true;
+		if(runningCommand.wantsInput) return true;
 		return !runningCommand.running;
 	}
 
@@ -205,8 +260,23 @@ public class Console {
 		cursorIndex = 0;
 		String cmd = typing;
 		typing = "";
-		write(prefix + cmd);
 		
+		if(runningCommand != null && runningCommand.wantsInput){
+			System.out.println("running in " + cmd);
+			runningCommand.write(cmd);
+		}else{
+    		write(prefix + cmd);
+    		runCommand(cmd);
+		}
+		
+		scroll(1);
+	}
+	
+	public void runCommand(String cmd){
+		runCommand(cmd, true);
+	}
+	
+	public void runCommand(String cmd, boolean setRunning){
 		String[] split = cmd.split(" ");
 		String   label = split[0];
 		String[] args  = new String[]{};
@@ -216,7 +286,7 @@ public class Console {
 		
 		Command toRun = KeyHandler.commands.get(label);
 
-		runningCommand = toRun;
+		if(setRunning) runningCommand = toRun;
 		
 		if (toRun != null) {
 			boolean success = toRun.runCommand(this, new ArrayList<String>(Arrays.asList(args)));
@@ -224,9 +294,14 @@ public class Console {
 				write("Usage: \"" + toRun.usage + "\"");
 			}
 		}else{
-			write("\\R'" + label + "\\R' is not a recognized command or program.");
+			String prog = label;
+			if(!prog.endsWith(".jas")) prog += ".jas";
+			if(CommandRun.canRun(prog, this)){
+				runCommand("run " + prog, setRunning);
+			}else{
+				write("\\R'" + label + "\\R' is not a recognized command or program.");
+			}
 		}
-		scroll(1);
 	}
 
 	public void left() {
@@ -255,7 +330,7 @@ public class Console {
     			String sub = typing.substring(cursorIndex);
     			int space = sub.indexOf(" ");
     			
-    			System.out.println(space);
+//    			System.out.println(space);
     			
     			if(space != -1){
     				cursorIndex += space+1;
@@ -272,7 +347,15 @@ public class Console {
 
 	public void type(KeyEvent e) {
 		
-		System.out.println(inputDelay + " " + awaitingInput());
+//		System.out.println(inputDelay + " " + awaitingInput());
+		if(Game.keyHandler().isPressed(KeyEvent.VK_CONTROL) && Game.keyHandler().isPressed(KeyEvent.VK_T)){
+			if(runningCommand != null){
+				if(runningCommand.running) {
+					runningCommand.cancel();
+					runningCommand = null;
+				}
+			}
+		}
 		
 		if(inputDelay > 0) return;
 		
@@ -307,12 +390,14 @@ public class Console {
 				try {
 					String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor); 
 					sb.insert(cursorIndex, data);
+					cursorIndex += data.length();
 				} catch (HeadlessException | UnsupportedFlavorException | IOException e1) {
 					e1.printStackTrace();
 				}
 			}
 		}
 		
+		blinkTimer = 0;
 		typing = sb.toString();
 		scroll(maxLines);
 	}
@@ -324,18 +409,23 @@ public class Console {
 	}
 	
 	public int height(FormattedString str, Font f){
-		String[] lines = FormattedString.addLinebreaks(str.getRawString(), charPerLine).split("\n");
-		int base = lines.length;
-		
-		return (int) (base * (f.getSize() * 1.15f));
+		float lineSize = f.getSize() * 1.15f;
+		try{
+    		return (int) (str.broken_f.split("\n").length * lineSize);
+		}catch(Exception e){
+			return (int) lineSize;
+		}
 	}
 
 	public void scroll(MouseWheelEvent e) {
-		scroll(e.getWheelRotation());
+		scroll(e.getWheelRotation() * 2);
 	}
+	
 	public void scroll(int scrollAmount) {
 		int newScroll = (int) (scrollOfs - scrollAmount * (fontSize * 1.15f));
 	
+		if(scrollAmount < 0) newScroll--;
+		
 //		System.out.println(newScroll + " " + maxScroll);
 
 		List<FormattedString> str = new ArrayList<FormattedString>();
@@ -375,9 +465,72 @@ public class Console {
 		
 		if(maxScroll < Game.getHeight()-fontSize*3) newScroll = 0;
 		
-		System.out.println(maxScroll);
+//		System.out.println(maxScroll);
 		
 		scrollOfs = newScroll;
+	}
+	
+	public Command getRunning(){
+		return runningCommand;
+	}
+
+	public void startup() {
+		
+		String osName = System.getProperty("os.name");
+		String osVersion = System.getProperty("os.version");
+		
+		List<String> bootSequence = new ArrayList<String>();
+		bootSequence.add("Booting...");
+		bootSequence.add("OS = " + osName + "\nOS Version = " + osVersion);
+		bootSequence.add("Loading Kernal...");
+		bootSequence.add("Loading Configuration...");
+		
+		int lastDelay = 0;
+		for(int i = 0; i < bootSequence.size(); i++){
+			final String s = bootSequence.get(i);
+			
+			int delay = Rand.range(50, 110);
+			if(i == 2) delay = Rand.range(20, 30);
+			
+			Scheduler.delayedTask(() -> {
+				write(s);
+			}, lastDelay += delay);
+		}
+		
+		Scheduler.delayedTask(() -> {
+			runCommand("cls");
+		}, lastDelay += Rand.range(50, 110));
+		
+		boolean hasStartupFile = CommandRun.canRun("startup.jas", this);
+		
+		List<String> bootSequence2 = new ArrayList<String>();
+		bootSequence2.add("Starting " + Game.getName() + " version " + Game.getVersion() + " ...");
+		bootSequence2.add("Loading commands...");
+		bootSequence2.add("Indexing files...");
+		bootSequence2.add((hasStartupFile ? "Running startup.jas ..." : "No startup.jas found.") + "\n");
+		
+		for(int i = 0; i < bootSequence2.size(); i++){
+			final String s = bootSequence2.get(i);
+			Scheduler.delayedTask(() -> {
+				write(s);
+			}, lastDelay += Rand.range(30, 70));
+		}
+		
+		Scheduler.delayedTask(() -> {
+			if(hasStartupFile) runCommand("run startup.jas -noDisp");
+			
+			while(runningCommand != null && runningCommand.running){}
+			
+			try {
+				Thread.sleep(500);
+			}catch (InterruptedException e) {}
+			
+			canInput = true;
+		}, lastDelay += Rand.range(50, 110));
+	}
+
+	public void setRunning(Command cmd) {
+		runningCommand = cmd;
 	}
 	
 }

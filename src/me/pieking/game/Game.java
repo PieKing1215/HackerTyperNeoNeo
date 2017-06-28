@@ -1,9 +1,19 @@
 package me.pieking.game;
 
 import java.awt.Dimension;
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
+import java.util.Iterator;
+import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.filechooser.FileSystemView;
 
 import me.pieking.game.command.Command;
 import me.pieking.game.console.Console;
@@ -11,6 +21,7 @@ import me.pieking.game.events.KeyHandler;
 import me.pieking.game.events.MouseHandler;
 import me.pieking.game.gfx.Disp;
 import me.pieking.game.gfx.Fonts;
+import me.pieking.game.gfx.FormattedString;
 import me.pieking.game.gfx.Render;
 import me.pieking.game.sound.Sound;
 
@@ -20,7 +31,6 @@ public class Game {
 	private static final int HEIGHT = 600;
 	
 	private static String name = "Hacker Typer Neo NEO";
-	private static String version = "0.0.0-r1";
 	
 	private static boolean running = false;
 	
@@ -38,7 +48,26 @@ public class Game {
 	private static KeyHandler keyHandler;
 	private static MouseHandler mouseHandler;
 	
+	public static int glitchLevels = 0;
+	
 	public static void main(String[] args) {
+//		Map charSets = Charset.availableCharsets();
+//	    Iterator it = charSets.keySet().iterator();
+//	    while(it.hasNext()) {
+//	      String csName = (String)it.next();
+//	      System.out.print(csName);
+//	      Iterator aliases = ((Charset)charSets.get(csName))
+//	        .aliases().iterator();
+//	      if(aliases.hasNext())
+//	        System.out.print(": ");
+//	      while(aliases.hasNext()) {
+//	        System.out.print(aliases.next());
+//	        if(aliases.hasNext())
+//	          System.out.print(", ");
+//	      }
+//	      System.out.println();
+//	    }
+		
 		run();
 	}
 
@@ -124,15 +153,33 @@ public class Game {
 		Command.registerDefaultCommands();
 		
 		mainConsole = new Console();
-		mainConsole.setMaxLines(64);
+		mainConsole.setMaxLines(100);
+		mainConsole.startup();
+		
+//		mainConsole.setDirectory("/test");
 	}
 	
 	private static void tick(){
-		frame.setTitle(name + " v" + version + " | " + fps + " FPS " + tps + " TPS");
+		if(Game.getTime() % 10 == 0){
+    		String title = name + " v" + version + " | " + fps + " FPS " + tps + " TPS";
+    		
+    		if(glitchLevels > 20){
+        		byte[] b = title.getBytes();
+        		
+        		int ct = Rand.range(0, (b.length-1)/2);
+        		for(int i = 0; i < ct; i++){
+        			if(Rand.oneIn((100-glitchLevels)/4)) b[Rand.range(0, (b.length-1))]++;
+        		}
+        		
+        		title = new String(b);
+    		}
+    		
+    		frame.setTitle(title);
+		}
 		
-//		if(time % 120 == 0){
-//			mainConsole.write(time + "");
-//		}
+		glitchLevels = 0;
+		
+		FormattedString.updateRand();
 		
 		mainConsole.tick();
 		
@@ -198,6 +245,58 @@ public class Game {
 
 	public static Console focusedConsole() {
 		return getMainConsole();
+	}
+	
+	private static File baseDir = null;
+	
+	public static File getFileDir(){
+		
+		if(baseDir != null) return baseDir;
+		
+		if(ranFromJar()){
+			try {
+				
+				ProtectionDomain pd = Game.class.getProtectionDomain();
+				CodeSource cs = pd.getCodeSource();
+				URL l = cs.getLocation();
+				URI i = l.toURI();
+				String p = i.getPath();
+				
+//				System.out.println(pd + "|" + cs + "|" + l + "|" + i + "|" + p);
+				
+				File runLoc = new File(p);
+//				System.out.println(runLoc.getCanonicalPath());
+				File f = new File(runLoc.getParentFile(), "/filesystem");
+				f.mkdir();
+				return f;
+			}catch (URISyntaxException e) {
+				e.printStackTrace();
+			}
+		}
+			
+		File f = new File(getDesktop(), "/hackertyperneoneo/filesystem");
+		f.mkdir();
+		return f;
+	}
+	
+	public static File getDesktop(){
+		return FileSystemView.getFileSystemView().getHomeDirectory();
+	}
+	
+	/**
+	 * Credit to <a href="https://stackoverflow.com/a/482566">https://stackoverflow.com/a/482566</a>.
+	 */
+	public static boolean ranFromJar(){
+		String res = Game.class.getResource("Game.class").toString();
+//		System.out.println(res);
+		return res.startsWith("jar:") || res.startsWith("rsrc:");
+	}
+
+	public static void reboot() {
+		mainConsole.canInput = false;
+		mainConsole.clear();
+		mainConsole.setRunning(null);
+		mainConsole.startup();
 	}
 	
 }

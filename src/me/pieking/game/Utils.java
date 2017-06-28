@@ -15,6 +15,8 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Reader;
@@ -24,6 +26,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -544,15 +550,15 @@ public class Utils {
 		switch(c){
 		case "\\W":
 		case "¶0": //¶0 \W
-			col = new Color(255, 255, 255); //white
+			col = Color.WHITE; //white
 			break;
 		case "\\Y":
 		case "¶1": //¶1 \Y
-			col = new Color(255, 255, 0); //yellow
+			col = Color.YELLOW; //yellow
 			break;
 		case "\\B":
 		case "¶2": //¶2 \B
-			col = new Color(0, 0, 255); //blue
+			col = Color.BLUE; //blue
 			break;
 		case "\\L":
 		case "¶3": //¶3 \L
@@ -560,7 +566,7 @@ public class Utils {
 			break;
 		case "\\G":
 		case "¶4": //¶4 \G
-			col = new Color(0, 255, 0); //green
+			col = Color.GREEN; //green
 			break;
 		case "¶5": //¶5
 			col = Color.MAGENTA;
@@ -571,7 +577,7 @@ public class Utils {
 			break;
 		case "\\R":
 		case "¶7": //¶7 \R
-			col = new Color(255, 0, 0); //red
+			col = Color.RED; //red
 			break;
 		case "\\p":
 		case "¶8": //¶8 \p
@@ -579,7 +585,7 @@ public class Utils {
 			break;
 		case "\\X":
 		case "¶9": //¶9 \X
-			col = new Color(0, 0, 0); //black
+			col = Color.BLACK; //black
 			break;
 		case "¶A": //¶A
 			col = Color.DARK_GRAY;
@@ -604,8 +610,33 @@ public class Utils {
 		case "¶G": //¶G \r
 			col = Utils.rainbowColor(0.1f, 0); //Rainbow
 			break;
+		default:
+			String code = c.replace("\\", "");
+			
+			try{
+				float cc = Integer.parseInt(code) / 9f;
+				col = new Color(cc, cc, cc);
+			}catch(NumberFormatException e){}
+			
+			break;
 		}
 		return col;
+	}
+	
+	public static List<String> readLines(File file) throws IOException{
+		return Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
+	}
+	
+	public static String readFile(File file) throws IOException {
+		StringBuilder b = new StringBuilder();
+		List<String> lines = readLines(file);
+		
+		for(String s : lines){
+			b.append(s);
+			b.append("\n");
+		}
+		
+		return b.toString();
 	}
 	
 }
