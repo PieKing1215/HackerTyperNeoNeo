@@ -452,6 +452,7 @@ public class Jasic {
          * @return The parsed expression.
          */
         private Expression atomic() {
+        	//System.out.println("atomic " + last(1).text); 
             if (match(TokenType.WORD)) {
                 return new VariableExpression(last(1).text);
             } else if (match(TokenType.NUMBER)) {
@@ -730,13 +731,17 @@ public class Jasic {
     	
     	public void execute(AtomicBoolean cancel) {
     		
+    		//System.out.println("ook");
     		
+    		//System.out.println(expression);
     		Value eval = expression != null ? expression.evaluate() : new NumberValue(-1);
+    		//System.out.println(eval + " " + eval.toString());
     		if(!(eval instanceof NumberValue)) return;
     		
     		NumberValue nval = (NumberValue) eval;
     		int index = (int) nval.value;
     		
+    		//System.out.println(name + " " + index);
     		
 //        	//System.out.println(name + " " + nval.toString());
     		
@@ -745,6 +750,7 @@ public class Jasic {
     				Value val = variables.get(name);
     				if(val instanceof ArrayValue){
     					ArrayValue ar = (ArrayValue) val;
+    					//System.out.println("remove " + index);
     					ar.remove(index);
     				}
     			}
@@ -948,6 +954,7 @@ public class Jasic {
         	}
     	}
     	
+    	//System.out.println(arName + " " + index);
     	
     	return new Object[]{arName, index};
     }
@@ -1241,10 +1248,12 @@ public class Jasic {
      */
     public class ArrayValue implements Value {
     	public ArrayValue(String initSize) {
+    		//System.out.println("arraaay " + initSize + " : " + initSize.substring(1, initSize.length()-1));
     		
     		Value[] val = new Value[0];
     		
     		if(initSize.substring(1, initSize.length()-1).equals("?")){
+    			//System.out.println("list");
     			valueL = new ArrayList<Jasic.Value>();
     			value = null;
     		}else{
