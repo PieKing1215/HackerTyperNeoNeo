@@ -1,0 +1,534 @@
+run "cls"
+
+' global variables
+VERSION = "0.0.1 (DASIC port)"
+SEPERATOR = "-----------------------------------------------------------------------------"
+RUNNING = 1
+ACTION_BAR = "\O [\uF\nIGHT]      [\uA\nCT]      [\uI\nTEM]     [\uM\nERCY]"
+ACTION_BAR_CANSPARE = "\O [\uF\nIGHT]      [\uA\nCT]      [\uI\nTEM]     \Y[\uM\nERCY]\W"
+HP_HAS = "\Y#"
+HP_LOST = "\R-"
+HP_DAMAGE = "\p("
+
+sub printHeader
+
+' initialize player
+P_NAME = "CHARA"
+P_ATK = 1
+P_DEF = 0
+P_HP = 10
+P_MAXHP = 10
+P_LV = 1
+P_EXP = 0
+P_GOLD = 0
+' add items to inventory
+P_ITEMS = [?]
+P_ITEMS[?] = {Monster Candy,5}
+P_ITEMS[?] = {Monster Candy,5}
+P_ITEMS[?] = {Monster Candy,5}
+
+mainLoop:
+    sleep 1000
+
+    ' create monster template
+    monTemp = [12]; ' name, minHp, maxHp, minAtk, maxAtk, minDef, maxDef, minExp, maxExp, minGold, maxGold, [acts]
+    monTemp[0] = "Froggit" ' name
+    monTemp[1] = 5  ' minHp
+    monTemp[2] = 10 ' maxHp
+    monTemp[3] = 1  ' minAtk
+    monTemp[4] = 2  ' maxAtk
+    monTemp[5] = 1  ' minDef
+    monTemp[6] = 2  ' maxDef
+    monTemp[7] = 1  ' minExp
+    monTemp[8] = 3  ' maxExp
+    monTemp[9] = 1  ' minGold
+    monTemp[10]= 2  ' maxGold
+    monTemp[11] = {Compliment,Threat}
+    ' print monTemp
+
+    ' create randomized monster based on template
+    M_TYPE = monTemp
+    M_NAME = monTemp[0]
+
+    min = monTemp[1]
+    max = monTemp[2]
+    sub range
+    M_MAXHP = ret ' maxHp
+    M_HP = M_MAXHP ' hp
+
+    min = monTemp[3]
+    max = monTemp[4]
+    sub range
+    M_ATK = ret ' atk
+
+    min = monTemp[5]
+    max = monTemp[6]
+    sub range
+    M_DEF = ret ' def
+
+    min = monTemp[7]
+    max = monTemp[8]
+    sub range
+    M_XP = ret ' exp
+
+    min = monTemp[9]
+    max = monTemp[10]
+    sub range
+    M_GOLD = ret ' gold
+
+    M_CANSPARE = 0 ' can spare
+
+    ' do the combat
+    sub combat 
+    
+    ' does the player want to keep playing?
+    cont: print "Continue? (Y/N)"
+    input I$
+    print "? " + I$
+    print ""
+    if I$="Y" then yes
+    if I$="N" then no
+    goto cont
+    no:
+        RUNNING = 0
+        goto contEnd
+    yes:
+        run "cls"
+        sub printHeader
+    contEnd:
+if RUNNING then mainLoop
+
+goto exit
+' ==================== SUBROUTINES ==================== '
+
+range: ' generate a number in a range
+    rnd 1 rangeRand
+    ret = (max - min) * rangeRand
+    int ret ret
+    ret = ret + min
+return
+
+combat:
+    print "* " + M_NAME + " approaches!"
+    skipEnemyTurn = 0
+
+    sub battle
+    print SEPERATOR
+return
+
+battle: ' battle routine
+    print ""
+    sub dispInfo
+    
+    if M_CANSPARE then spareable
+        print ACTION_BAR
+        goto actionBarEnd
+    spareable:
+        print ACTION_BAR_CANSPARE
+    actionBarEnd:
+    
+    
+    
+    skipEnemyTurn = 0
+    
+    actionSelect:
+    input in
+    print "? " + in
+    print ""
+    
+    if in="FIGHT" then fight
+    if in="fight" then fight
+    if in="F" then fight
+    if in="f" then fight
+    if in="ACT" then act
+    if in="A" then act
+    if in="act" then act
+    if in="a" then act
+    if in="ITEM" then item
+    if in="I" then item
+    if in="item" then item
+    if in="i" then item
+    if in="MERCY" then mercy
+    if in="M" then mercy
+    if in="mercy" then mercy
+    if in="m" then mercy
+    
+    print "* '" + in + "' isn't an option"
+    goto actionSelect
+    
+    fight:
+    
+        print ""
+        print "* You lash at the " + M_NAME + "..."
+        sleep 1000
+        min = 0
+        max = 2
+        sub range
+        damage = (P_ATK + ret) - M_DEF
+        if damage > 0 then goodDam
+        damage = 1
+        goodDam:
+        
+        min = 1
+        max = 10
+        sub range
+        
+        if ret = 1 then mdodge
+        if damage < 1 then mdodge ' shouldn't need this but it's a good check anyway
+            arg_hp = M_HP
+            arg_maxHp = M_MAXHP
+            arg_damage = damage
+            sub formDamHp
+            print "* " + M_NAME + " took " + damage + " HP of damage! HP " + ret_formDamHp
+             
+            M_HP = M_HP - damage
+            
+            ' print M_HP
+             
+            if M_HP > 0 then noDie
+                print "* " + M_NAME + " could not take any more."
+                sleep 1000
+                print ""
+                
+                print "* YOU WON!"
+                print "* You earned " + M_XP + " XP and " + M_GOLD + " gold."
+                
+                arg_gained = M_XP
+                sub gainExp
+                if gainExp_ret=0 then noLove
+                    print "* Your LOVE increased."
+                noLove:
+                
+                return
+            noDie:
+        goto fend
+        mdodge:
+        print "* " + M_NAME + " dodged your attack!"
+        fend:
+        ' print "goto end"
+    goto end
+    act:
+        acts = M_TYPE[11]
+        actCt = 0+acts
+        print "* Check"
+        actIndex = 0
+        actLoop:
+            print "* " + acts[actIndex]
+        actIndex = actIndex + 1
+        if actIndex<actCt then actLoop
+        
+        input aSel
+        print "? " + aSel
+        print ""
+        
+        actSelLoop:
+            if aSel="BACK" then battle
+            if aSel="back" then battle
+            if aSel="B" then battle
+            if aSel="b" then battle
+            
+            if aSel="CHECK" then check
+            if aSel="Check" then check
+            if aSel="check" then check
+            
+            if aSel="COMPLIMENT" then compliment
+            if aSel="Compliment" then compliment
+            if aSel="compliment" then compliment
+            
+            if aSel="THREAT" then threat
+            if aSel="Threat" then threat
+            if aSel="threat" then threat
+            
+            ' else
+                print "* '" + aSel + "' isn't an option."
+            goto actSelLoopFinish
+            compliment:
+                sub actCompliment
+            goto breakActSelLoop
+            threat:
+                sub actThreat
+            goto breakActSelLoop
+            check:
+                print "* " + M_NAME + " " + M_ATK + " ATK " + M_DEF + " DEF"
+                arg_hp = M_HP
+                arg_maxHp = M_MAXHP
+                sub formHp
+                print "* HP " + ret_formHp
+            goto breakActSelLoop
+            actSelLoopFinish:
+            input aSel
+            print "? " + aSel
+            print ""
+        goto actSelLoop
+        breakActSelLoop:
+        
+    goto end
+    item:
+    
+        itemCount = 0+P_ITEMS
+        if itemCount>0 then hasItems
+            print "* You don't have any items left."
+            skipEnemyTurn = 1
+        goto endItems
+        hasItems:
+        
+            dispItemI = 0
+            dispItemLoop:
+                dItem = P_ITEMS[dispItemI]
+                print "" + dispItemI + ") * " + dItem[0]
+            dispItemI = dispItemI+1
+            if dispItemI<itemCount then dispItemLoop
+            
+            input iSel
+            print "? " + iSel
+            print ""
+            
+            pickingItem:
+                if iSel="BACK" then battle
+                if iSel="back" then battle
+                if iSel="B" then battle
+                if iSel="b" then battle
+                
+                itemIndex = 0+iSel ' convert iSel to number
+               
+                if itemIndex < 0 then invalidNumber
+                if itemIndex > (itemCount-1) then invalidIndex
+                    selItem = P_ITEMS[itemIndex]
+                    print "* You ate the " + selItem[0] + "."
+                    sleep 1000
+                    P_HP = P_HP + selItem[1]
+                    
+                    if P_HP < P_MAXHP then noMaxOut
+                        P_HP = P_MAXHP
+                        print "* Your HP was maxed out."
+                    goto doneHeal
+                    noMaxOut:
+                    print "* You recovered " + selItem[1] + " HP!"
+                    doneHeal:
+                    
+                    remove P_ITEMS itemIndex
+                    goto donePickingItem
+                goto pickingItemEnd
+                invalidIndex:
+                    print "* There's no item in slot " + itemIndex + "."
+                goto pickingItemEnd
+                invalidNumber:
+                    print "* '" + iSel + "' isn't an option."
+                pickingItemEnd:
+                input iSel
+                print "? " + iSel
+                print ""
+            goto pickingItem
+            donePickingItem:
+        
+        endItems:
+    goto end
+    mercy:
+        if M_CANSPARE then yellowSpare
+            print "* Spare"
+        goto yellowSpareEnd
+        yellowSpare:
+            print "\Y* Spare"
+        yellowSpareEnd:
+        
+        print "* Flee"
+        
+        input mSel
+        print "? " + mSel
+        print ""
+        
+        mercyLoop:
+            if mSel="BACK" then battle
+            if mSel="back" then battle
+            if mSel="B" then battle
+            if mSel="b" then battle
+            
+            if mSel="SPARE" then mSpare
+            if mSel="spare" then mSpare
+            if mSel="S" then mSpare
+            if mSel="s" then mSpare
+            
+            if mSel="FLEE" then mFlee
+            if mSel="flee" then mFlee
+            if mSel="F" then mFlee
+            if mSel="f" then mFlee
+            ' else
+                print "* '" + mSel + "' isn't an option."
+            goto finishMercyLoop
+            mSpare:
+                if M_CANSPARE then canSpare
+                    sleep 500
+                    print "* It had no effect."
+                goto mercyLoopEnd
+                canSpare:
+                    print "* " + M_NAME + " does not want to FIGHT any more."
+                    sleep 1000
+                    print ""
+                    print "* YOU WON!"
+					print "* You earned 0 XP and " + M_GOLD + " gold."
+                    return
+                finishSpare:
+            goto finishMercyLoop
+            mFlee:
+                fleeMsgs = {* I'm outta here.,* I've got better to do.,* Escaped...,* Don't slow me down.}
+                min = 0
+                max = 3
+                sub range
+                'print ret
+                'print fleeMsgs
+                print fleeMsgs[ret]
+                sleep 2000
+                return
+            finishMercyLoop:
+            input mSel
+            print "? " + mSel
+            print ""
+        goto mercyLoop
+        mercyLoopEnd:
+        
+    goto end ' not really necessary
+    end:
+    ' print "end"
+    if skipEnemyTurn then skipEnemy
+    sleep 1000
+    print "" 
+    if in="FIGHT" then fought
+    if in="fight" then fought
+    if in="F" then fought
+    if in="f" then fought
+        print "* " + M_NAME + " struck!"
+    goto mEnd
+    fought:
+        print "* " + M_NAME + " struck back!"
+    mEnd:
+    
+    min = 0
+    max = 1
+    sub range
+    eDamage = (M_ATK + ret) - P_DEF
+    
+    sleep 1000
+    
+    min = 1
+    max = 10
+    sub range
+    if ret = 1 then noDamage
+    if eDamage < 1 then noDamage
+        print "* It hit for " + eDamage + " HP!"
+        
+        P_HP = P_HP - eDamage
+        
+        sleep 500
+        
+        if P_HP > 0 then noPDie
+            print ""
+            print "###########################################"
+            print "#              GAME  OVER                 #"
+            print "#               You Died!                 #"
+            print "###########################################"
+            goto exit
+        noPDie:
+    goto finishDamage
+    noDamage:
+        print "* But missed!"
+    finishDamage:
+    sleep 100
+    skipEnemy:
+    
+goto battle
+
+dispInfo: ' display player info
+    arg_hp = P_HP
+    arg_maxHp = P_MAXHP
+    sub formHp
+    print " " + P_NAME + "  LV" + P_LV + "     HP " + ret_formHp + " " + P_HP + "/" + P_MAXHP
+return
+
+formHp: ' creates a health bar using arg_hp and arg_maxHp. returns ret_formHp
+    ret_formHp = "["
+
+    formHp_I = 0 ' for(i = 0; i < maxHp; i++)
+    formHpLoop:
+        if formHp_I > arg_hp then formHpLoopTrue
+        if formHp_I = arg_hp then formHpLoopTrue
+            ret_formHp = ret_formHp + HP_HAS
+            goto formHpEndIf
+            formHpLoopTrue:
+            ret_formHp = ret_formHp + HP_LOST
+        formHpEndIf:
+    formHp_I = formHp_I + 1
+    if formHp_I < arg_maxHp then formHpLoop
+
+    ret_formHp = ret_formHp + "\W]"
+return
+
+formDamHp: ' creates a health bar using arg_hp, arg_maxHp, arg_damage. returns ret_formDamHp
+    ret_formDamHp = "["
+
+    ' print "" + arg_hp + " " + arg_maxHp + " " + arg_damage
+    
+    formDamHp_I = 0 ' for(i = 0; i < maxHp; i++)
+    formDamHpLoop:
+        if formDamHp_I > arg_hp then formDamHpIfTrue
+        if formDamHp_I = arg_hp then formDamHpIfTrue
+            ' else
+            if formDamHp_I > (arg_hp-arg_damage) then formDamHpIf2True 
+            if formDamHp_I = (arg_hp-arg_damage) then formDamHpIf2True
+                ' else
+                ret_formDamHp = ret_formDamHp + HP_HAS
+                goto formDamHpEndIf2
+                
+                ' if i >= hp-damage
+                formDamHpIf2True:
+                ret_formDamHp = ret_formDamHp + HP_DAMAGE
+                
+                formDamHpEndIf2:
+            goto formDamHpEndIf
+            
+            ' if i >= hp
+            formDamHpIfTrue: 
+            ret_formDamHp = ret_formDamHp + HP_LOST
+        formDamHpEndIf:
+    formDamHp_I = formDamHp_I + 1
+    if formDamHp_I < arg_maxHp then formDamHpLoop
+
+    ret_formDamHp = ret_formDamHp + "\W]"
+return
+
+printHeader:
+    '     "                                                                             "
+    print "                           __   ___  __  ___            ___"
+    print "                |  | |\\ | |  \\ |__  |\R<3\W)  |   /\\  |    |__"
+    print "                \\__/ | \\| |__/ |___ |--\\  |  /--\\ |___ |___"
+    print "                                  In Text"
+    print "                     v" + VERSION + " by PieKing1215"
+    print SEPERATOR
+    print ""
+return
+
+actCompliment:
+    print "* " + M_NAME + " didn't understand what you said, but was flattered anyway."
+    M_CANSPARE = 1
+return
+
+actThreat:
+    print "* " + M_NAME + " didn't understand what you said, but was scared anyway."
+    M_CANSPARE = 1
+return
+
+gainExp:
+    gainExp_ret = 0
+    
+    P_XP = P_XP + arg_gained
+    
+    goto levelUpLoopEnd
+    levelUpLoop:
+        P_LV = P_LV + 1
+        P_XP = P_XP - 10
+        gainExp_ret = 1
+    levelUpLoopEnd:
+    if P_XP > 10 then levelUpLoop
+    
+return
+
+exit:

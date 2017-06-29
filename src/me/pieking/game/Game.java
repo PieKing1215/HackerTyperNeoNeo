@@ -1,15 +1,13 @@
 package me.pieking.game;
 
 import java.awt.Dimension;
+import java.awt.Point;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
-import java.util.Iterator;
-import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -178,7 +176,21 @@ public class Game {
     		frame.setTitle(title);
 		}
 		
-		glitchLevels = 0;
+//		if(Game.getTime() % 60 == 0) {
+//			glitchLevels++;
+//			System.out.println(glitchLevels);
+//		}
+		
+		int maxTranslate = Math.max(1, glitchLevels/5);
+		if(glitchLevels >= 10 && Game.getTime() % 10 == 0 && Rand.oneIn((100 - glitchLevels)/6)){
+			int xa = Rand.range(-maxTranslate, maxTranslate);
+			int ya = Rand.range(-maxTranslate, maxTranslate);
+			Point oldLoc = frame.getLocation();
+			frame.setLocation(frame.getLocation().x + xa, frame.getLocation().y + ya);
+			Scheduler.delayedTask(() -> {
+				frame.setLocation(oldLoc);
+			}, 5);
+		}
 		
 		FormattedString.updateRand();
 		

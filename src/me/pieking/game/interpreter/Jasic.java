@@ -126,8 +126,8 @@ public class Jasic {
 //    public static void main(String[] args) {
 //        // Just show the usage and quit if a script wasn't provided.
 //        if (args.length != 1) {
-//            //System.out.println("Usage: jasic <script>");
-//            //System.out.println("Where <script> is a relative path to a .jas script to run.");
+//            ////System.out.println("Usage: jasic <script>");
+//            ////System.out.println("Where <script> is a relative path to a .jas script to run.");
 //            return;
 //        }
 //        
@@ -180,7 +180,10 @@ public class Jasic {
                 if (charTokens.indexOf(c) != -1) {
                     tokens.add(new Token(Character.toString(c),
                         tokenTypes[charTokens.indexOf(c)]));
-                } else if (Character.isLetter(c) || c == '[' || c == ']' || c == '{' || c == '}') {
+                } else if (c == '{') {
+                	token += c;
+                    state = TokenizeState.ARRAY_LITERAL;
+                } else if (Character.isLetter(c) || c == '[' || c == ']' || c == '_' || c == '?') {
                     token += c;
                     state = TokenizeState.WORD;
                 } else if (Character.isDigit(c)) {
@@ -192,22 +195,29 @@ public class Jasic {
                     state = TokenizeState.COMMENT;
                 }
                 break;
-                
+            case ARRAY_LITERAL:
+            	//System.out.println(c);
+            	token += c;
+            	if(c == '}'){
+            		//System.out.println("add literal " + token);
+            		tokens.add(new Token(token, TokenType.ARRAYLITERAL));
+            		token = "";
+                    state = TokenizeState.DEFAULT;
+                    i--;
+            	}
+            	break;
             case WORD:
-//            	//System.out.println(c);
-                if (Character.isLetterOrDigit(c) || c == '[' || c == ']' || c == '{' || c == '}' || c == ',') {
+//            	////System.out.println(c);
+                if (Character.isLetterOrDigit(c) || c == '[' || c == ']' || c == '{' || c == '}' || c == ',' || c == '_' || c == '?') {
                     token += c;
                 } else if (c == ':') {
                     tokens.add(new Token(token, TokenType.LABEL));
                     token = "";
                     state = TokenizeState.DEFAULT;
                 } else {
-//                	//System.out.println("token = " + token);
+//                	////System.out.println("token = " + token);
                 	if(token.startsWith("[") && token.endsWith("]")){
                 		tokens.add(new Token(token, TokenType.ARRAY));
-                	}else if(token.startsWith("{") && token.endsWith("}")){
-                		//System.out.println("add literal " + token);
-                		tokens.add(new Token(token, TokenType.ARRAYLITERAL));
                 	}else{
                 		tokens.add(new Token(token, TokenType.WORD));
                 	}
@@ -294,7 +304,7 @@ public class Jasic {
      * identify how deeply nested you are). The parser is able to handle that.
      */
     private enum TokenizeState {
-        DEFAULT, WORD, NUMBER, STRING, COMMENT
+        DEFAULT, WORD, NUMBER, STRING, COMMENT, ARRAY_LITERAL
     }
 
     // Parsing -----------------------------------------------------------------
@@ -348,6 +358,15 @@ public class Jasic {
                 	Expression toRound = expression();
                 	String name = consume(TokenType.WORD).text;
                     statements.add(new IntStatement(name, toRound, j));
+                } else if (match("remove")) {
+                	String name = consume(TokenType.WORD).text;
+                	if(get(0).text.equals("?")){
+                		consume("?");
+                		statements.add(new RemoveStatement(name, j));
+                	}else{
+                		Expression index = expression();
+                		statements.add(new RemoveStatement(name, index, j));
+                	}
                 } else if (match("rnd")) {
                 	Expression ex = expression();
                 	String name = consume(TokenType.WORD).text;
@@ -356,6 +375,8 @@ public class Jasic {
                     statements.add(new InputStatement(consume(TokenType.WORD).text, j));
                 } else if (match("goto")) {
                     statements.add(new GotoStatement(consume(TokenType.WORD).text));
+                } else if (match("sleep")) {
+                    statements.add(new SleepStatement(expression()));
                 } else if (match("sub")) {
                     statements.add(new SubStatement(consume(TokenType.WORD).text));
                 } else if (match("return")) {
@@ -414,9 +435,9 @@ public class Jasic {
             // Keep building operator expressions as long as we have operators.
             while (match(TokenType.OPERATOR) || match(TokenType.EQUALS) || match(TokenType.NOTEQUALS)) {
                 String operator = last(1).text.charAt(0) + "";
-                //System.out.println("op = " + operator);
+                ////System.out.println("op = " + operator);
                 Expression right = atomic();
-                //System.out.println(right);
+                ////System.out.println(right);
                 expression = new OperatorExpression(expression, operator, right);
             }
             
@@ -431,7 +452,6 @@ public class Jasic {
          * @return The parsed expression.
          */
         private Expression atomic() {
-        	//System.out.println(last(1).text);
             if (match(TokenType.WORD)) {
                 return new VariableExpression(last(1).text);
             } else if (match(TokenType.NUMBER)) {
@@ -546,7 +566,7 @@ public class Jasic {
             if (position + offset >= tokens.size()) {
                 return new Token("", TokenType.EOF);
             }
-            //System.out.println(tokens.get(position + offset).text);
+            ////System.out.println(tokens.get(position + offset).text);
             return tokens.get(position + offset);
         }
         
@@ -610,7 +630,7 @@ public class Jasic {
         	if(j.cons != null){
         		j.cons.write(expression.evaluate().toString());
         	}else{
-        		//System.out.println(expression.evaluate().toString());
+        		////System.out.println(expression.evaluate().toString());
         	}
         }
 
@@ -632,7 +652,7 @@ public class Jasic {
         	if(j != null){
         		j.cons.runCommand(expression.evaluate().toString(), false);
         	}else{
-        		//System.out.println("run " + expression.evaluate().toString());
+        		////System.out.println("run " + expression.evaluate().toString());
         	}
         }
 
@@ -664,7 +684,7 @@ public class Jasic {
                 
                 if(input == null) return;
                 
-                //System.out.println(input);
+                ////System.out.println(input);
                 
                 if(running != null){
             		if(running instanceof CommandRun){
@@ -688,6 +708,52 @@ public class Jasic {
     }
     
     /**
+     * A "remove" statement evaluates an expression into a number, 
+     * and removes the value at that index in the array with a certain name.
+     */
+    public class RemoveStatement implements Statement {
+    	Jasic j;
+    	String name;
+    	
+    	public RemoveStatement(String name, Expression expression, Jasic j) {
+    		
+    		this.name = name;
+    		this.expression = expression;
+    		this.j = j;
+    	}
+    	
+    	public RemoveStatement(String name, Jasic j) {
+    		expression = null;
+    		this.name = name;
+    		this.j = j;
+    	}
+    	
+    	public void execute(AtomicBoolean cancel) {
+    		
+    		
+    		Value eval = expression != null ? expression.evaluate() : new NumberValue(-1);
+    		if(!(eval instanceof NumberValue)) return;
+    		
+    		NumberValue nval = (NumberValue) eval;
+    		int index = (int) nval.value;
+    		
+    		
+//        	//System.out.println(name + " " + nval.toString());
+    		
+    		if(index >= -1){
+    			if(variables.containsKey(name)){
+    				Value val = variables.get(name);
+    				if(val instanceof ArrayValue){
+    					ArrayValue ar = (ArrayValue) val;
+    					ar.remove(index);
+    				}
+    			}
+    		}
+    	}
+    	
+    	private final Expression expression;
+    }
+    /**
      * A "int" statement evaluates an expression, converts the result to a
      * double, rounds it down to the nearest whole number, and stores the result in a variable.
      */
@@ -696,7 +762,7 @@ public class Jasic {
     	String name;
     	
     	public IntStatement(String name, Expression expression, Jasic j) {
-    		//System.out.println("IntStatement " + name);
+    		////System.out.println("IntStatement " + name);
     		
     		this.name = name;
     		this.expression = expression;
@@ -716,11 +782,11 @@ public class Jasic {
         	int casted = (int) nval.value;
         	nval = new NumberValue(casted);
         	
-        	//System.out.println(arName + " " + index);
+        	////System.out.println(arName + " " + index);
         	
-//        	System.out.println(name + " " + nval.toString());
+//        	//System.out.println(name + " " + nval.toString());
         	
-        	if(arName != null && index >= 0){
+        	if(arName != null && index >= -1){
         		if(variables.containsKey(arName)){
         			Value val = variables.get(arName);
         			if(val instanceof ArrayValue){
@@ -750,7 +816,7 @@ public class Jasic {
     	String name;
     	
     	public RndStatement(Expression mode, String name, Jasic j) {
-    		//System.out.println("IntStatement " + name);
+    		////System.out.println("IntStatement " + name);
     		
     		this.name = name;
     		this.mode = mode;
@@ -779,9 +845,9 @@ public class Jasic {
         	
         	NumberValue nval = new NumberValue(random);
         	
-//        	System.out.println(name + " " + nval.toString());
+//        	//System.out.println(name + " " + nval.toString());
         	
-        	if(arName != null && index >= 0){
+        	if(arName != null && index >= -1){
         		if(variables.containsKey(arName)){
         			Value val = variables.get(arName);
         			if(val instanceof ArrayValue){
@@ -810,25 +876,37 @@ public class Jasic {
         	String arName = (String) arrayInfo[0];
         	int index = (int) arrayInfo[1];
         	
-        	if(arName != null && index >= 0){
+        	//System.out.println(name);
+        	
+        	//System.out.println("array = " + arName);
+        	
+        	Value eval = value.evaluate();
+        	
+        	//System.out.println(value);
+			
+			//System.out.println(eval);
+        	
+        	if(arName != null && index >= -1){
         		if(variables.containsKey(arName)){
         			Value val = variables.get(arName);
         			if(val instanceof ArrayValue){
         				ArrayValue ar = (ArrayValue) val;
         				
-        				Value eval = value.evaluate();
+        				//System.out.println(ar);
         				
         				if(eval instanceof ArrayValue){
         					ArrayValue eAr = (ArrayValue) eval;
         					ar.set(index, eAr.clone());
         				}else{
-        					ar.set(index, value.evaluate());
+        					ar.set(index, eval);
         				}
         			}
         		}
         	}else{
-        		variables.put(name, value.evaluate());
+        		variables.put(name, eval);
         	}
+        	
+        	//System.out.println();
         }
 
         private final String name;
@@ -837,7 +915,7 @@ public class Jasic {
     
     public Object[] arrayNameAndIndex(String input){
     	Pattern p = Pattern.compile("(.+?)\\[(.+?)\\]"); // xPos[151] -> (xPos)[(151)]
-    	//System.out.println(input);
+    	////System.out.println(input);
     	Matcher m = p.matcher(input);
     	String arName = null;
     	String indexS = null;
@@ -846,7 +924,7 @@ public class Jasic {
         	indexS = m.group(2);
     	}
     	
-    	//System.out.println("index = " + indexS);
+    	////System.out.println("index = " + indexS);
     	
     	int index = -1;
     	
@@ -854,10 +932,12 @@ public class Jasic {
     		index = Integer.parseInt(indexS);
     	}catch(Exception e){
     		try{
-    			//System.out.println(indexS + " " + variables.containsKey(indexS));
-        		if(variables.containsKey(indexS)){
+    			////System.out.println(indexS + " " + variables.containsKey(indexS));
+        		if(indexS == "?"){
+        			index = -1;
+        		}else if(variables.containsKey(indexS)){
         			Value val = variables.get(indexS);
-        			//System.out.println(val);
+        			////System.out.println(val);
         			if(val instanceof NumberValue){
         				NumberValue num = (NumberValue) val;
         				index = (int)num.toNumber();
@@ -867,6 +947,7 @@ public class Jasic {
         		e1.printStackTrace();
         	}
     	}
+    	
     	
     	return new Object[]{arName, index};
     }
@@ -881,12 +962,30 @@ public class Jasic {
         
         public void execute(AtomicBoolean cancel) {
             if (labels.containsKey(label)) {
-            	System.out.println("goto " + label);
+            	//System.out.println("goto " + label);
                 currentStatement = labels.get(label).intValue();
             }
         }
 
         private final String label;
+    }
+    
+    /**
+     * A "sleep" statement waits a certain amount of time.
+     */
+    public class SleepStatement implements Statement {
+        public SleepStatement(Expression expression) {
+            this.expression = expression;
+        }
+        
+        public void execute(AtomicBoolean cancel) {
+        	int time = (int) expression.evaluate().toNumber();
+            long start = System.currentTimeMillis();
+            
+            while(System.currentTimeMillis()-start < time || cancel.get()){}
+        }
+
+        private final Expression expression;
     }
     
     public static List<Integer> returnTo = new ArrayList<Integer>();
@@ -899,7 +998,7 @@ public class Jasic {
         
         public void execute(AtomicBoolean cancel) {
             if (labels.containsKey(label) && returnTo.size() < 100) {
-            	System.out.println("sub " + label);
+            	//System.out.println("sub " + label);
             	returnTo.add(currentStatement);
                 currentStatement = labels.get(label).intValue();
             }
@@ -959,7 +1058,7 @@ public class Jasic {
         	String arName = (String) arrayInfo[0];
         	int index = (int) arrayInfo[1];
         	
-        	if(arName != null && index >= 0){
+        	if(arName != null && index >= -1){
         		if(variables.containsKey(arName)){
         			Value val = variables.get(arName);
         			if(val instanceof ArrayValue){
@@ -1010,7 +1109,7 @@ public class Jasic {
                     return new NumberValue((leftVal.toNumber() ==
                                             rightVal.toNumber()) ? 0 : 1);
                 } else {
-//                	System.out.println(left + " -> " + leftVal + " " + right + " -> " + rightVal);
+//                	//System.out.println(left + " -> " + leftVal + " " + right + " -> " + rightVal);
                 	
                     return new NumberValue(leftVal.toString().equals(
                                            rightVal.toString()) ? 0 : 1);
@@ -1123,7 +1222,15 @@ public class Jasic {
         }
         
         @Override public String toString() { return value; }
-        public double toNumber() { return Double.parseDouble(value); }
+        
+        public double toNumber() { 
+        	try{
+        		return Double.parseDouble(value); 
+        	}catch(NumberFormatException e){
+        		return -1;
+        	}
+        }
+        
         public Value evaluate() { return this; }
 
         private final String value;
@@ -1134,28 +1241,62 @@ public class Jasic {
      */
     public class ArrayValue implements Value {
     	public ArrayValue(String initSize) {
-    		////System.out.println("arraaay " + initSize);
     		
     		Value[] val = new Value[0];
     		
-            try{
-            	val = new Value[Integer.parseInt(initSize.substring(1, initSize.length()-1))];
-            }catch(NumberFormatException e){}
-            
-            value = val;
+    		if(initSize.substring(1, initSize.length()-1).equals("?")){
+    			valueL = new ArrayList<Jasic.Value>();
+    			value = null;
+    		}else{
+                try{
+                	val = new Value[Integer.parseInt(initSize.substring(1, initSize.length()-1))];
+                }catch(NumberFormatException e){}
+                
+                value = val;
+                valueL = null;
+    		}
         }
     	
     	public Value get(int index) {
-			if(index >= 0 && index < value.length) return value[index];
+    		if(valueL != null){
+    			if(index == -1){
+					return valueL.get(valueL.size()-1);
+				}else{
+					if(index >= 0 && index < valueL.size()) return valueL.get(index);
+				}
+			}else{
+    			if(index >= 0 && index < value.length) return value[index];
+    		}
 			return new NumberValue(-1);
 		}
 
 		public void set(int index, Value val) {
-    		if(index >= 0 && index < value.length) value[index] = val;
+			if(valueL != null){
+				if(index == -1){
+					valueL.add(val);
+				}else{
+					if(index >= 0 && index < valueL.size()) valueL.set(index, val);
+				}
+			}else{
+				if(index >= 0 && index < value.length) value[index] = val;
+			}
+		}
+		
+		public void remove(int index) {
+			if(valueL != null){
+				if(index == -1){
+					valueL.remove(valueL.size()-1);
+				}else{
+					if(index >= 0 && index < valueL.size()) valueL.remove(index);
+				}
+			}else{
+				if(index >= 0 && index < value.length) value[index] = null;
+			}
 		}
 
 		public ArrayValue(Value[] value) {
             this.value = value;
+            valueL = null;
         }
         
 		/**
@@ -1163,6 +1304,8 @@ public class Jasic {
 		 */
         public ArrayValue(Object text) {
         	String raw = (String) text;
+        	
+        	//System.out.println("raw = " + raw);
         	
         	raw = raw.substring(1, raw.length()-1);
         	
@@ -1172,7 +1315,8 @@ public class Jasic {
         	for(int i = 0; i < spl.length; i++){
         		String s = spl[i];
         		
-        		//System.out.println(s + " " + variables.containsKey(s));
+        		//System.out.println(i + ": " + s);
+        		////System.out.println(s + " " + variables.containsKey(s));
         		
         		try{
         			value[i] = new NumberValue(Double.parseDouble(s));
@@ -1180,6 +1324,7 @@ public class Jasic {
             		value[i] = new StringValue(s);
         		}
         	}
+        	valueL = null;
         	
 		}
 
@@ -1187,26 +1332,42 @@ public class Jasic {
         	
         	String items = "";
         	
-        	for(int i = 0; i < value.length; i++){
-        		if(value[i] != null){
-        			if(value[i] instanceof StringValue){
-        				items += "\"" + value[i].toString() + "\",";
-        			}else{
-        				items += value[i].toString() + ", ";
-        			}
-        		}else{
-        			items += "null,";
-        		}
+        	if(value != null){
+            	for(int i = 0; i < value.length; i++){
+            		if(value[i] != null){
+            			if(value[i] instanceof StringValue){
+            				items += "\"" + value[i].toString() + "\", ";
+            			}else{
+            				items += value[i].toString() + ", ";
+            			}
+            		}else{
+            			items += "null, ";
+            		}
+            	}
+        	}else{
+        		for(int i = 0; i < valueL.size(); i++){
+        			Value v = valueL.get(i);
+            		if(v != null){
+            			if(v instanceof StringValue){
+            				items += "\"" + v.toString() + "\", ";
+            			}else{
+            				items += v.toString() + ", ";
+            			}
+            		}else{
+            			items += "null, ";
+            		}
+            	}
         	}
         	
         	if(!items.isEmpty()) items = items.substring(0, items.length()-2);
         	
-        	return "[" + items + "]"; 
+        	return (valueL!=null ? "L" : "" ) + "[" + items + "]"; 
         }
-        public double toNumber() { return value.length; }
+        public double toNumber() { return valueL == null ? value.length : valueL.size(); }
         public Value evaluate() { return this; }
         
         private final Value[] value;
+        private final List<Value> valueL;
         
         public ArrayValue clone(){
         	Value[] val = new Value[value.length];
@@ -1267,7 +1428,7 @@ public class Jasic {
             try{
             	s.execute(cancel);
             }catch(Exception e){
-            	System.out.println(s);
+            	//System.out.println(s);
             	e.printStackTrace();
             	break;
             }

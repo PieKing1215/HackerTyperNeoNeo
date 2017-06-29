@@ -109,7 +109,9 @@ public class Console {
 			
 			int y = fontSize*2 + lastOfs + scrollOfs;
 			
-			if(y > 0 && y - fontSize < Game.getHeight()) line.renderFormatted(g, fontSize, fontSize*2 + lastOfs + scrollOfs);
+			try{
+				if(y > 0 && y - fontSize < Game.getHeight()) line.renderFormatted(g, fontSize, fontSize*2 + lastOfs + scrollOfs);
+			}catch(Exception e){}
 			
 			lastOfs += h;
 		}
@@ -191,7 +193,7 @@ public class Console {
 	}
 	
 	public void write(String s){
-		write(new FormattedString(s + "\\W "));
+		write(new FormattedString(s + "\\W\\n"));
 	}
 	
 	public void write(FormattedString s){
@@ -294,12 +296,12 @@ public class Console {
 				write("Usage: \"" + toRun.usage + "\"");
 			}
 		}else{
-			String prog = label;
+			String prog = cmd;
 			if(!prog.endsWith(".jas")) prog += ".jas";
 			if(CommandRun.canRun(prog, this)){
 				runCommand("run " + prog, setRunning);
 			}else{
-				write("\\R'" + label + "\\R' is not a recognized command or program.");
+				write("\\R'" + label + "\\R\\n' is not a recognized command or program.");
 			}
 		}
 	}

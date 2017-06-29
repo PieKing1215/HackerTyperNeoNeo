@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.util.ArrayList;
+import java.util.List;
 
 import me.pieking.game.Game;
 import me.pieking.game.Rand;
@@ -48,6 +50,10 @@ public class FormattedString {
 		return addLinebreaks(input, maxLineLength, true);
 	}
 	
+	public static enum TextStyle{
+		PLAIN, UNDERLINE, BOLD, ITALICS;
+	}
+	
 	/**
 	 * Splits text onto multiple lines, using the location of spaces.<br>
 	 * Credit to <a href="https://stackoverflow.com/a/7528259">https://stackoverflow.com/a/7528259</a>.
@@ -72,7 +78,7 @@ public class FormattedString {
 	        lineLen += length;
 	    }
 	    
-	    return output.toString();
+	    return output.toString().substring(0, output.toString().length()-1);
 	}
 	
 	public static boolean alwaysRaw = false;
@@ -118,6 +124,7 @@ public class FormattedString {
 			return;
 		}
 		
+		List<TextStyle> styles = new ArrayList<TextStyle>();
 		currColor = g.getColor();
 		
 		if(lastLineSize != Game.focusedConsole().charPerLine) addBreaks();
@@ -142,20 +149,37 @@ public class FormattedString {
 				char text = line.charAt(i);
 				String textS = text + "";
 				char before = '\0';
+				char twoBefore = '\0';
 				
 				if(i > 0) before = line.charAt(i-1);
+				if(i > 1) twoBefore = line.charAt(i-2);
 				
 				boolean display = true;
 				
 				if(text == '\\' || text == '¶'){
-					if(i+1 < lineLength) {
-						currColor = Utils.parseColor(textS + line.charAt(i+1));
-						g.setColor(currColor);
-					}
 					display = false;
+					if(i+1 < lineLength) {
+						char next = line.charAt(i+1);
+						if(next == 'b'){
+							styles.add(TextStyle.BOLD);
+						}else if(next == 'u'){
+							styles.add(TextStyle.UNDERLINE);
+						}else if(next == 'i'){
+							styles.add(TextStyle.ITALICS);
+						}else if(next == 'n'){
+							styles.clear();
+						}else if(next == '\\'){
+							display = true;
+						}else{
+							currColor = Utils.parseColor(textS + line.charAt(i+1));
+							g.setColor(currColor);
+						}
+					}
 				}
 				
-				if(before == '\\' || before == '¶' || before == '^' || text == '^') display = false;
+				if((before == '\\' && twoBefore != '\\') || before == '¶' || before == '^' || text == '^') display = false;
+				
+//				if(before == '\\' && text == '\\') display = true;
 				
 				int xOffset = widthPrev;
 				
@@ -207,10 +231,21 @@ public class FormattedString {
         				}
         				
     				}catch(Exception e){}
+
+    				int mod = 0;
+    				if(styles.contains(TextStyle.ITALICS)) mod += Font.ITALIC;
+    				g.setFont(g.getFont().deriveFont(mod));
     				
     				textS = new String(bytes);
-    				
-					g.drawString(textS, x + xOffset + xo, y + yOffset + yo);
+    				g.drawString(textS, x + xOffset + xo, y + yOffset + yo);
+					if(styles.contains(TextStyle.BOLD)) {
+						g.drawString(textS, x + xOffset + xo, y + yOffset + yo-1);
+						g.drawString(textS, x + xOffset + xo+1, y + yOffset + yo);
+						g.drawString(textS, x + xOffset + xo+1, y + yOffset + yo-1);
+					}
+					if(styles.contains(TextStyle.UNDERLINE)){
+						g.drawLine(x + xOffset + xo + g.getFontMetrics().stringWidth(textS), y + yOffset + yo + 2, x + xOffset + xo, y + yOffset + yo + 2);
+					}
 				}
 				
 			}
