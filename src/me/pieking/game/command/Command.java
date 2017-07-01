@@ -24,6 +24,7 @@ public abstract class Command {
 		registerCommand(new CommandExit());
 		registerCommand(new CommandRun());
 		registerCommand(new CommandReboot());
+		registerCommand(new CommandEdit());
 	}
 	
 	/**

@@ -989,7 +989,7 @@ public class Jasic {
         	int time = (int) expression.evaluate().toNumber();
             long start = System.currentTimeMillis();
             
-            while(System.currentTimeMillis()-start < time || cancel.get()){}
+            while(System.currentTimeMillis()-start < time && !cancel.get()){}
         }
 
         private final Expression expression;

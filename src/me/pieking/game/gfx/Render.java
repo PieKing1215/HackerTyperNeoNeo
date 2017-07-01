@@ -16,7 +16,7 @@ public class Render {
 		
 		g.clearRect(0, 0, d.getWidth(), d.getHeight());
 		
-		Game.focusedConsole().render(g);
+		Game.getFocusedArea().render(g);
 	}
 
 }

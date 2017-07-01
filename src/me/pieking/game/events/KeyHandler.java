@@ -27,16 +27,7 @@ public class KeyHandler implements KeyListener{
 	public static LinkedHashMap<String, Command> commands = new LinkedHashMap<String, Command>();
 	
 	public void keyJustPressed(KeyEvent e){
-		if(e.getKeyCode() == KeyEvent.VK_ESCAPE){
-			Game.focusedConsole().typing = "";
-			//inCommandThing = false;
-		}else if(e.getKeyCode() == KeyEvent.VK_ENTER){
-			Game.focusedConsole().enter();
-		}else if(e.getKeyCode() == KeyEvent.VK_LEFT){
-			Game.focusedConsole().left();
-		}else if(e.getKeyCode() == KeyEvent.VK_RIGHT){
-			Game.focusedConsole().right();
-		}
+		
 	}
 	
 	public static Command getCommand(String label){
@@ -44,7 +35,7 @@ public class KeyHandler implements KeyListener{
 	}
 	
 	public static void runCommand(String cmd){
-		runCommand(Game.focusedConsole(), cmd);
+		runCommand(Game.getMainConsole(), cmd);
 	}
 	
 	public static void runCommand(Console console, String cmd){
@@ -59,7 +50,7 @@ public class KeyHandler implements KeyListener{
 	}
 	
 	public static void runCommand(String label, List<String> args) {
-		runCommand(Game.focusedConsole(), label, args);
+		runCommand(Game.getMainConsole(), label, args);
 	}
 	
 	public static void runCommand(Console console, String label, List<String> args) {
@@ -76,6 +67,13 @@ public class KeyHandler implements KeyListener{
 			pressed.add(e.getKeyCode());
 			keyJustPressed(e);
 		}
+		
+		if(e.getKeyCode() == KeyEvent.VK_LEFT){
+			Game.getFocusedArea().left();
+		}else if(e.getKeyCode() == KeyEvent.VK_RIGHT){
+			Game.getFocusedArea().right();
+		}
+		
 	}
 
 	@Override
@@ -89,7 +87,7 @@ public class KeyHandler implements KeyListener{
 	public void keyTyped(KeyEvent e) {
 		long now = System.currentTimeMillis();
     	if(now - lastType < typeTime || inCommandThing){
-    		Game.focusedConsole().type(e);
+    		Game.getFocusedArea().type(e);
     	}
     	lastType = now;
 	}

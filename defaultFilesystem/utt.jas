@@ -1,7 +1,7 @@
 run "cls"
 
 ' global variables
-VERSION = "0.0.1 (DASIC port)"
+VERSION = "0.0.2 (DASIC port)"
 SEPERATOR = "-----------------------------------------------------------------------------"
 RUNNING = 1
 ACTION_BAR = "\O [\uF\nIGHT]      [\uA\nCT]      [\uI\nTEM]     [\uM\nERCY]"
@@ -15,7 +15,7 @@ sub printHeader
 ' initialize player
 P_NAME = "CHARA"
 P_ATK = 1
-P_DEF = 0
+P_DEF = 1
 P_HP = 10
 P_MAXHP = 10
 P_LV = 1
@@ -28,7 +28,7 @@ P_ITEMS[?] = {Monster Candy,5}
 P_ITEMS[?] = {Monster Candy,5}
 
 mainLoop:
-    sleep 1000
+    sleep 500
 
     ' create monster template
     monTemp = [12]; ' name, minHp, maxHp, minAtk, maxAtk, minDef, maxDef, minExp, maxExp, minGold, maxGold, [acts]
@@ -103,19 +103,22 @@ goto exit
 
 range: ' generate a number in a range
     rnd 1 rangeRand
-    ret = (max - min) * rangeRand
+    ret = ((max - min)+1) * rangeRand
     int ret ret
     ret = ret + min
 return
 
 combat:
-    print "* " + M_NAME + " approaches!"
+    print " * " + M_NAME + " approaches!"
     skipEnemyTurn = 0
 
     sub battle
     print SEPERATOR
 return
 
+back:
+    run "cls"
+    sub printHeader
 battle: ' battle routine
     print ""
     sub dispInfo
@@ -126,15 +129,14 @@ battle: ' battle routine
     spareable:
         print ACTION_BAR_CANSPARE
     actionBarEnd:
-    
-    
-    
+   
     skipEnemyTurn = 0
     
     actionSelect:
-    input in
-    print "? " + in
     print ""
+    input in
+    run "cls"
+    sub printHeader
     
     if in="FIGHT" then fight
     if in="fight" then fight
@@ -153,18 +155,18 @@ battle: ' battle routine
     if in="mercy" then mercy
     if in="m" then mercy
     
-    print "* '" + in + "' isn't an option"
-    goto actionSelect
+    print " * '" + in + "' isn't an option"
+    goto battle
     
     fight:
     
-        print ""
-        print "* You lash at the " + M_NAME + "..."
+        print " * You lash at " + M_NAME + "..."
         sleep 1000
         min = 0
         max = 2
         sub range
         damage = (P_ATK + ret) - M_DEF
+        ' print "(" + P_ATK + " + " + ret + ") - " + M_DEF
         if damage > 0 then goodDam
         damage = 1
         goodDam:
@@ -179,53 +181,60 @@ battle: ' battle routine
             arg_maxHp = M_MAXHP
             arg_damage = damage
             sub formDamHp
-            print "* " + M_NAME + " took " + damage + " HP of damage! HP " + ret_formDamHp
+            print " * " + M_NAME + " took " + damage + " HP of damage! HP " + ret_formDamHp
              
             M_HP = M_HP - damage
             
             ' print M_HP
              
             if M_HP > 0 then noDie
-                print "* " + M_NAME + " could not take any more."
+                sleep 500
+                print " * " + M_NAME + " could not take any more."
                 sleep 1000
                 print ""
                 
-                print "* YOU WON!"
-                print "* You earned " + M_XP + " XP and " + M_GOLD + " gold."
+                print " * YOU WON!"
+                print " * You earned " + M_XP + " XP and " + M_GOLD + " gold."
+                
+                P_GOLD = P_GOLD + M_GOLD
                 
                 arg_gained = M_XP
                 sub gainExp
                 if gainExp_ret=0 then noLove
-                    print "* Your LOVE increased."
+                    print " * Your LOVE increased."
                 noLove:
                 
                 return
             noDie:
         goto fend
         mdodge:
-        print "* " + M_NAME + " dodged your attack!"
+        print " * " + M_NAME + " dodged your attack!"
         fend:
         ' print "goto end"
     goto end
     act:
         acts = M_TYPE[11]
         actCt = 0+acts
-        print "* Check"
+        print " * Check"
         actIndex = 0
         actLoop:
-            print "* " + acts[actIndex]
+            print " * " + acts[actIndex]
         actIndex = actIndex + 1
         if actIndex<actCt then actLoop
         
+        print ""
         input aSel
         print "? " + aSel
         print ""
         
+        run "cls"
+        sub printHeader
+        
         actSelLoop:
-            if aSel="BACK" then battle
-            if aSel="back" then battle
-            if aSel="B" then battle
-            if aSel="b" then battle
+            if aSel="BACK" then back
+            if aSel="back" then back
+            if aSel="B" then back
+            if aSel="b" then back
             
             if aSel="CHECK" then check
             if aSel="Check" then check
@@ -240,7 +249,7 @@ battle: ' battle routine
             if aSel="threat" then threat
             
             ' else
-                print "* '" + aSel + "' isn't an option."
+                print " * '" + aSel + "' isn't an option."
             goto actSelLoopFinish
             compliment:
                 sub actCompliment
@@ -249,13 +258,14 @@ battle: ' battle routine
                 sub actThreat
             goto breakActSelLoop
             check:
-                print "* " + M_NAME + " " + M_ATK + " ATK " + M_DEF + " DEF"
+                print " * " + M_NAME + " " + M_ATK + " ATK " + M_DEF + " DEF"
                 arg_hp = M_HP
                 arg_maxHp = M_MAXHP
                 sub formHp
-                print "* HP " + ret_formHp
+                print " * HP " + ret_formHp
             goto breakActSelLoop
             actSelLoopFinish:
+            print ""
             input aSel
             print "? " + aSel
             print ""
@@ -267,7 +277,7 @@ battle: ' battle routine
     
         itemCount = 0+P_ITEMS
         if itemCount>0 then hasItems
-            print "* You don't have any items left."
+            print " * You don't have any items left."
             skipEnemyTurn = 1
         goto endItems
         hasItems:
@@ -279,42 +289,47 @@ battle: ' battle routine
             dispItemI = dispItemI+1
             if dispItemI<itemCount then dispItemLoop
             
+            print ""
             input iSel
             print "? " + iSel
             print ""
             
             pickingItem:
-                if iSel="BACK" then battle
-                if iSel="back" then battle
-                if iSel="B" then battle
-                if iSel="b" then battle
+                if iSel="BACK" then back
+                if iSel="back" then back
+                if iSel="B" then back
+                if iSel="b" then back
+                
+                run "cls"
+                sub printHeader
                 
                 itemIndex = 0+iSel ' convert iSel to number
                
                 if itemIndex < 0 then invalidNumber
                 if itemIndex > (itemCount-1) then invalidIndex
                     selItem = P_ITEMS[itemIndex]
-                    print "* You ate the " + selItem[0] + "."
+                    print " * You ate the " + selItem[0] + "."
                     sleep 1000
                     P_HP = P_HP + selItem[1]
                     
                     if P_HP < P_MAXHP then noMaxOut
                         P_HP = P_MAXHP
-                        print "* Your HP was maxed out."
+                        print " * Your HP was maxed out."
                     goto doneHeal
                     noMaxOut:
-                    print "* You recovered " + selItem[1] + " HP!"
+                    print " * You recovered " + selItem[1] + " HP!"
                     doneHeal:
                     
                     remove P_ITEMS itemIndex
                     goto donePickingItem
                 goto pickingItemEnd
                 invalidIndex:
-                    print "* There's no item in slot " + itemIndex + "."
+                    print " * There's no item in slot " + itemIndex + "."
                 goto pickingItemEnd
                 invalidNumber:
-                    print "* '" + iSel + "' isn't an option."
+                    print " * '" + iSel + "' isn't an option."
                 pickingItemEnd:
+                print ""
                 input iSel
                 print "? " + iSel
                 print ""
@@ -325,23 +340,27 @@ battle: ' battle routine
     goto end
     mercy:
         if M_CANSPARE then yellowSpare
-            print "* Spare"
+            print " * Spare"
         goto yellowSpareEnd
         yellowSpare:
             print "\Y* Spare"
         yellowSpareEnd:
         
-        print "* Flee"
+        print " * Flee"
         
+        print ""
         input mSel
         print "? " + mSel
         print ""
         
         mercyLoop:
-            if mSel="BACK" then battle
-            if mSel="back" then battle
-            if mSel="B" then battle
-            if mSel="b" then battle
+            if mSel="BACK" then back
+            if mSel="back" then back
+            if mSel="B" then back
+            if mSel="b" then back
+            
+            run "cls"
+            sub printHeader
             
             if mSel="SPARE" then mSpare
             if mSel="spare" then mSpare
@@ -353,19 +372,22 @@ battle: ' battle routine
             if mSel="F" then mFlee
             if mSel="f" then mFlee
             ' else
-                print "* '" + mSel + "' isn't an option."
+                print " * '" + mSel + "' isn't an option."
             goto finishMercyLoop
             mSpare:
                 if M_CANSPARE then canSpare
                     sleep 500
-                    print "* It had no effect."
+                    print " * It had no effect."
                 goto mercyLoopEnd
                 canSpare:
-                    print "* " + M_NAME + " does not want to FIGHT any more."
+                    print " * " + M_NAME + " does not want to FIGHT any more."
                     sleep 1000
                     print ""
-                    print "* YOU WON!"
-					print "* You earned 0 XP and " + M_GOLD + " gold."
+                    print " * YOU WON!"
+					print " * You earned 0 XP and " + M_GOLD + " gold."
+                    
+                    P_GOLD = P_GOLD + M_GOLD
+                    
                     return
                 finishSpare:
             goto finishMercyLoop
@@ -380,6 +402,7 @@ battle: ' battle routine
                 sleep 2000
                 return
             finishMercyLoop:
+            print ""
             input mSel
             print "? " + mSel
             print ""
@@ -396,10 +419,10 @@ battle: ' battle routine
     if in="fight" then fought
     if in="F" then fought
     if in="f" then fought
-        print "* " + M_NAME + " struck!"
+        print " * " + M_NAME + " struck!"
     goto mEnd
     fought:
-        print "* " + M_NAME + " struck back!"
+        print " * " + M_NAME + " struck back!"
     mEnd:
     
     min = 0
@@ -414,7 +437,7 @@ battle: ' battle routine
     sub range
     if ret = 1 then noDamage
     if eDamage < 1 then noDamage
-        print "* It hit for " + eDamage + " HP!"
+        print " * It hit for " + eDamage + " HP!"
         
         P_HP = P_HP - eDamage
         
@@ -423,14 +446,17 @@ battle: ' battle routine
         if P_HP > 0 then noPDie
             print ""
             print "###########################################"
-            print "#              GAME  OVER                 #"
-            print "#               You Died!                 #"
+            print "                                           "
+            print "               GAME  OVER                  "
+            print "                You Died!                  "
+            print "         You collected " + P_GOLD +" Gold! "
+            print "                                           "
             print "###########################################"
             goto exit
         noPDie:
     goto finishDamage
     noDamage:
-        print "* But missed!"
+        print " * But missed!"
     finishDamage:
     sleep 100
     skipEnemy:
@@ -507,12 +533,12 @@ printHeader:
 return
 
 actCompliment:
-    print "* " + M_NAME + " didn't understand what you said, but was flattered anyway."
+    print " * " + M_NAME + " didn't understand what you said, but was flattered anyway."
     M_CANSPARE = 1
 return
 
 actThreat:
-    print "* " + M_NAME + " didn't understand what you said, but was scared anyway."
+    print " * " + M_NAME + " didn't understand what you said, but was scared anyway."
     M_CANSPARE = 1
 return
 

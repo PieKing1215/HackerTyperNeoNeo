@@ -14,7 +14,7 @@ public class Fonts {
 	
 	public static void init(){
 		//ex: damage = loadFont("damage.ttf");
-		anonymous = loadFont("Anonymous.ttf");
+		anonymous = loadFont("AnonymousEdit.ttf");
 		pixeled = loadFont("Pixeled.ttf");
 		threeDventure = loadFont("3Dventure.ttf");
 	}

@@ -72,7 +72,7 @@ public class MouseHandler implements MouseListener, MouseWheelListener{
 
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {
-		Game.focusedConsole().scroll(e);
+		Game.getFocusedArea().scroll(e);
 	}
 	
 }

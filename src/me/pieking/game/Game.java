@@ -15,6 +15,8 @@ import javax.swing.filechooser.FileSystemView;
 
 import me.pieking.game.command.Command;
 import me.pieking.game.console.Console;
+import me.pieking.game.console.TextArea;
+import me.pieking.game.console.TextEditor;
 import me.pieking.game.events.KeyHandler;
 import me.pieking.game.events.MouseHandler;
 import me.pieking.game.gfx.Disp;
@@ -43,11 +45,13 @@ public class Game {
 	private static double nsPerTick = 1e9 / 60d;
 	
 	private static Console mainConsole;
+	private static TextEditor editor;
 	
 	private static KeyHandler keyHandler;
 	private static MouseHandler mouseHandler;
 	
 	public static int glitchLevels = 0;
+	private static TextArea focused;
 	
 	public static void main(String[] args) {
 //		Map charSets = Charset.availableCharsets();
@@ -155,6 +159,11 @@ public class Game {
 		mainConsole.setMaxLines(100);
 		mainConsole.startup();
 		
+		editor = new TextEditor();
+		editor.setFile("editor.txt");
+
+		setFocusedArea(mainConsole);
+		
 //		mainConsole.setDirectory("/test");
 	}
 	
@@ -195,6 +204,7 @@ public class Game {
 		FormattedString.updateRand();
 		
 		mainConsole.tick();
+		getFocusedArea().tick();
 		
 		time++;
 	}
@@ -248,6 +258,14 @@ public class Game {
 		return mainConsole;
 	}
 	
+	public static TextArea getFocusedArea() {
+		return focused;
+	}
+	
+	public static void setFocusedArea(TextArea console) {
+		focused = console;
+	}
+	
 	public static KeyHandler keyHandler(){
 		return keyHandler;
 	}
@@ -256,9 +274,6 @@ public class Game {
 		return mouseHandler;
 	}
 
-	public static Console focusedConsole() {
-		return getMainConsole();
-	}
 	
 	private static File baseDir = null;
 	
@@ -310,6 +325,11 @@ public class Game {
 		mainConsole.clear();
 		mainConsole.setRunning(null);
 		mainConsole.startup();
+	}
+
+	public static void edit(String relativePath) {
+		editor.setFile(relativePath);
+		setFocusedArea(editor);
 	}
 	
 }

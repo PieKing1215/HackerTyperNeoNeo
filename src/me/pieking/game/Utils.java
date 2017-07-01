@@ -564,6 +564,9 @@ public class Utils {
 		case "¶3": //¶3 \L
 			col = new Color(14, 192, 253); //cyan
 			break;
+		case "\\l":
+			col = new Color(0, 127, 255); //cyan
+			break;
 		case "\\G":
 		case "¶4": //¶4 \G
 			col = Color.GREEN; //green

@@ -5,18 +5,19 @@ import java.io.IOException;
 import java.util.List;
 
 import me.pieking.game.Game;
+import me.pieking.game.Scheduler;
 import me.pieking.game.Utils;
 import me.pieking.game.console.Console;
 import me.pieking.game.gfx.Sprite;
 import me.pieking.game.sound.Sound;
 
-public class CommandTxt extends Command{
+public class CommandEdit extends Command{
 
-	public CommandTxt() {
-		super("read");
+	public CommandEdit() {
+		super("edit");
 		
-		desc  = "Display a text (.txt) file.";
-		usage = "read <relative_filename>";
+		desc  = "Edit a file.";
+		usage = "edit <relative_filename>";
 	}
 
 	@Override
@@ -31,17 +32,17 @@ public class CommandTxt extends Command{
     		try{
         		if(newDir.getCanonicalPath().contains(Game.getFileDir().getCanonicalPath())){
             		if(newDir.exists()){
-        				if(newDir.getName().endsWith(".txt")){
-        					running = true;
-        					List<String> str = Utils.readLines(newDir);
-        					console.write(newDir.getName() + ":");
-        					for(int i = 0; i < str.size(); i++){
-        						console.write(str.get(i));
-        					}
-        					running = false;
-        				}else{
-            				console.write("\\R'" + newRelativePath + "' is not a .txt file.");
-            			}
+    					if(newDir.isFile()){
+    						running = true;
+    						console.write("\\YLoading '" + newRelativePath + "'...");
+    						Scheduler.delayedTask(() -> {
+    							Game.edit(newRelativePath);
+    							running = false;
+    						}, 60);
+    					}else{
+    						console.write("\\R'" + newRelativePath + "' is not a file.");
+                			return false;
+    					}
             		}else{
             			console.write("\\RThere is no file named '" + newRelativePath + "'.");
             			return false;

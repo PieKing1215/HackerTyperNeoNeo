@@ -26,31 +26,18 @@ import me.pieking.game.events.KeyHandler;
 import me.pieking.game.gfx.Fonts;
 import me.pieking.game.gfx.FormattedString;
 
-public class Console {
-	
-	public int charPerLine = 60;
-	private List<FormattedString> lines = new ArrayList<FormattedString>();
-	private int maxLines = 5;
-	
-	private int scrollOfs = 0;
+public class Console extends TextArea{
 	
 	private Command runningCommand;
-	
-	public String typing = "";
-	public int cursorIndex = typing.length();
-	
-	public int blinkTimer = 0;
-	public int fontSize = 20;
-	private int maxScroll;
 	
 	public int inputDelay = 0;
 	
 	public String prefix = "> ";
 	
 	public File currDir;
-	public boolean canInput = false;
 	
 	public Console() {
+		deleteLines = true;
 		setDirectory("");
 	}
 	
@@ -80,11 +67,7 @@ public class Console {
 	}
 	
 	public void tick(){
-		if(scrollOfs < 0 && lines.isEmpty()) scrollOfs = 0;
-		blinkTimer++;
-		fontSize = 14;
-		maxLines = 128;
-		charPerLine = 78;
+		super.tick();
 		if(inputDelay > 0) inputDelay--;
 		String dir = getDirectory().replace("\\", "/");
 		if(!dir.startsWith("/")) dir = "/" + dir;
@@ -95,13 +78,17 @@ public class Console {
 		}
 	}
 	
+	@Override
 	public void render(Graphics2D g){
-		List<FormattedString> str = new ArrayList<FormattedString>();
-		str.addAll(lines);
+		FormattedString[] str = getLines();
 		int lastOfs = 0;
-		for(int i = 0; i < str.size(); i++){
-			FormattedString line = str.get(i);
+		for(int i = 0; i < str.length; i++){
+			FormattedString line = str[i];
 //			line.setRawString(line.getRawString().replaceAll("\\\\.", ""));
+			
+			if(i == str.length-1){
+				if(line.getRawString().isEmpty()) continue;
+			}
 			
 			g.setFont(Fonts.anonymous.deriveFont((float)fontSize));
 			
@@ -163,6 +150,7 @@ public class Console {
 //		System.out.println(maxScroll);
 //		System.out.println(thru);
 		
+		
 		if(this.maxScroll >= Game.getHeight()-fontSize*3){
     		int size = Math.max(minScroll + 600, 48);
     		
@@ -188,33 +176,20 @@ public class Console {
 		
 	}
 	
-	public List<FormattedString> getLines(){
-		return lines;
-	}
-	
-	public void write(String s){
-		write(new FormattedString(s + "\\W\\n"));
-	}
-	
-	public void write(FormattedString s){
-		lines.add(s);
+	@Override
+	public void write(String s) {
+		super.write(s);
 		
-		while(lines.size() > maxLines){
-			lines.remove(0);
-		}
-		
-		//System.out.println(fontSize + (fontSize * maxLines) + scrollOfs);
-		
-//		if(fontSize + (fontSize * lines.size()) + scrollOfs > Game.getHeight()-fontSize){
-//			scrollOfs -= fontSize;
-//		}
-		
-		List<FormattedString> str = new ArrayList<FormattedString>();
-		str.addAll(lines);
+		FormattedString[] str = getLines();
 		int lastOfs = 0;
 		
-		for(int i = 0; i < str.size(); i++){
-			FormattedString line = str.get(i);
+		for(int i = 0; i < str.length; i++){
+			FormattedString line = str[i];
+			
+			if(i == str.length-1){
+				if(line.getRawString().isEmpty()) continue;
+			}
+			
 			int h = height(line, Fonts.anonymous.deriveFont((float)fontSize));
 			int y = fontSize*2 + lastOfs + scrollOfs;
 			if(y+h > Game.getHeight()){
@@ -235,15 +210,6 @@ public class Console {
 				y -= diff;
 			}
 		}
-		
-	}
-	
-	public void setMaxLines(int lines){
-		this.maxLines = lines;
-	}
-	
-	public int getMaxLines(){
-		return this.maxLines;
 	}
 	
 	public boolean awaitingInput(){
@@ -253,15 +219,15 @@ public class Console {
 		return !runningCommand.running;
 	}
 
-	public void enter() {
-
+	@Override
+	public void enter(StringBuilder sb) {
 		inputDelay = 10;
 		
 		if(typing.isEmpty()) return;
 		
 		cursorIndex = 0;
 		String cmd = typing;
-		typing = "";
+		sb.setLength(0);
 		
 		if(runningCommand != null && runningCommand.wantsInput){
 			System.out.println("running in " + cmd);
@@ -306,47 +272,7 @@ public class Console {
 		}
 	}
 
-	public void left() {
-		blinkTimer = 0;
-		
-		if(Game.keyHandler().isPressed(KeyEvent.VK_CONTROL)){
-			if(cursorIndex > 0){
-    			String sub = typing.substring(0, cursorIndex-1);
-    			int space = sub.lastIndexOf(" ");
-    			
-    			cursorIndex = Math.max(space+1, 0);
-			}else{
-				cursorIndex = 0;
-			}
-		}else{
-			if(cursorIndex > 0) cursorIndex--;
-		}
-	}
-
-	public void right() {
-		blinkTimer = 0;
-		
-		if(Game.keyHandler().isPressed(KeyEvent.VK_CONTROL)){
-			
-			if(cursorIndex < typing.length()){
-    			String sub = typing.substring(cursorIndex);
-    			int space = sub.indexOf(" ");
-    			
-//    			System.out.println(space);
-    			
-    			if(space != -1){
-    				cursorIndex += space+1;
-    			}else{
-    				cursorIndex = typing.length();
-    			}
-			}else{
-				cursorIndex = typing.length();
-			}
-		}else{
-			if(cursorIndex < typing.length()) cursorIndex++;
-		}
-	}
-
+	@Override
 	public void type(KeyEvent e) {
 		
 //		System.out.println(inputDelay + " " + awaitingInput());
@@ -366,63 +292,11 @@ public class Console {
 			return;
 		}
 		
-		StringBuilder sb = new StringBuilder(typing);
+		super.type(e);
 		
-		if((int)e.getKeyChar() == KeyEvent.VK_BACK_SPACE /* http://stackoverflow.com/a/15693905 */){
-			if(sb.length() > 0){
-				if(cursorIndex > 0) {
-					sb.deleteCharAt(cursorIndex-1);
-					left();
-				}
-			}
-		}else if((int)e.getKeyChar() == KeyEvent.VK_DELETE /* http://stackoverflow.com/a/15693905 */){
-			if(sb.length() > 0){
-				if(cursorIndex < sb.length()) {
-					sb.deleteCharAt(cursorIndex);
-				}
-			}
-		}else if((int)e.getKeyChar() == KeyEvent.VK_ESCAPE /* http://stackoverflow.com/a/15693905 */){
-			sb = new StringBuilder("");
-			cursorIndex = 0;
-		}else if((int)e.getKeyChar() != KeyEvent.VK_ENTER && !Game.keyHandler().isPressed(KeyEvent.VK_CONTROL)){
-			sb.insert(cursorIndex, e.getKeyChar());
-			cursorIndex++;
-		}else if(Game.keyHandler().isPressed(KeyEvent.VK_CONTROL)){
-			if((int)e.getKeyChar() == 22){
-				try {
-					String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor); 
-					sb.insert(cursorIndex, data);
-					cursorIndex += data.length();
-				} catch (HeadlessException | UnsupportedFlavorException | IOException e1) {
-					e1.printStackTrace();
-				}
-			}
-		}
-		
-		blinkTimer = 0;
-		typing = sb.toString();
-		scroll(maxLines);
 	}
 
-	public void clear() {
-		lines.clear();
-		scrollOfs = 0;
-		maxScroll = 0;
-	}
-	
-	public int height(FormattedString str, Font f){
-		float lineSize = f.getSize() * 1.15f;
-		try{
-    		return (int) (str.broken_f.split("\n").length * lineSize);
-		}catch(Exception e){
-			return (int) lineSize;
-		}
-	}
-
-	public void scroll(MouseWheelEvent e) {
-		scroll(e.getWheelRotation() * 2);
-	}
-	
+	@Override
 	public void scroll(int scrollAmount) {
 		int newScroll = (int) (scrollOfs - scrollAmount * (fontSize * 1.15f));
 	
@@ -430,27 +304,30 @@ public class Console {
 		
 //		System.out.println(newScroll + " " + maxScroll);
 
-		List<FormattedString> str = new ArrayList<FormattedString>();
-		str.addAll(lines);
-		maxScroll = 0;
+		int newMaxScroll = 0;
 		
-		for(int i = 0; i < str.size(); i++){
-			FormattedString line = str.get(i);
+		FormattedString[] str = getLines();
+		for(int i = 0; i < str.length; i++){
+			FormattedString line = str[i];
+			
+			if(i == str.length-1){
+				if(line.getRawString().isEmpty()) continue;
+			}
+			
 			int h = height(line, Fonts.anonymous.deriveFont((float)fontSize));
-			int y = fontSize  + maxScroll + newScroll;
+			int y = fontSize  + newMaxScroll + newScroll;
 			if(y+h > Game.getHeight()){
 				int diff = (y+h) - Game.getHeight();
 				//newScroll -= diff;
 				y -= diff;
 			}
-			maxScroll += h;
+			newMaxScroll += h;
 		}
 		
 		if(awaitingInput()){
 			FormattedString line = new FormattedString(prefix + typing);
 			int h = height(line, Fonts.anonymous.deriveFont((float)fontSize));
-			int y = fontSize + maxScroll + newScroll;
-//			System.out.println(y + " " + h + " " + newScroll);
+			int y = fontSize + newMaxScroll + newScroll;
 			if(y+h > Game.getHeight()){
 				int diff = (y+h) - Game.getHeight();
 				//newScroll -= diff;
@@ -458,16 +335,14 @@ public class Console {
 			}
 		}
 		
-//		System.out.println(maxScroll + " " + newScroll);
+		if(scrollAmount > 0 && newScroll < -(newMaxScroll-Game.getHeight() + fontSize*4)) newScroll = -(newMaxScroll-Game.getHeight() + fontSize*4); //TODO: figure out how to calculate this magic number 
 		
-		if(scrollAmount > 0 && newScroll < -(maxScroll-Game.getHeight() + fontSize*4)) newScroll = -(maxScroll-Game.getHeight() + fontSize*4); //TODO: figure out how to calculate this magic number 
-		
-//		System.out.println(newScroll);
 		if(newScroll > 0) newScroll = 0;
 		
-		if(maxScroll < Game.getHeight()-fontSize*3) newScroll = 0;
+		if(newMaxScroll < Game.getHeight()-fontSize*3) newScroll = 0;
 		
-//		System.out.println(maxScroll);
+		maxScroll = newMaxScroll;
+		
 		
 		scrollOfs = newScroll;
 	}
@@ -529,6 +404,7 @@ public class Console {
 			
 			canInput = true;
 		}, lastDelay += Rand.range(50, 110));
+		canInput = true;
 	}
 
 	public void setRunning(Command cmd) {

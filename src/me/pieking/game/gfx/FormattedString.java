@@ -42,6 +42,10 @@ public class FormattedString {
 		this.setRawString(baseString);
 	}
 	
+	public FormattedString(String baseString, boolean addBreaks){
+		this.setRawString(baseString, addBreaks);
+	}
+	
 	public void renderFormatted(Graphics2D g, int x, int y){
 		renderFormatted(g, x, y, 1);
 	}
@@ -62,7 +66,7 @@ public class FormattedString {
 	    StringBuilder output = new StringBuilder(input.length());
 	    int lineLen = 0;
 
-	    String[] spl = input.split(" (?! )"); // split at spaces before non-spaces (preserves multiple-space gaps)
+	    String[] spl = input.split(" (?!( |\n))"); // split at spaces before non-spaces (preserves multiple-space gaps)
 	    
 	    for (String s : spl) {
 	        String word = s + " ";
@@ -112,29 +116,33 @@ public class FormattedString {
 	}
 	
 	public void addBreaks(){
-		lastLineSize = Game.focusedConsole().charPerLine;
-		broken = addLinebreaks(getRawString(), Game.focusedConsole().charPerLine, false);
-		broken_f = addLinebreaks(getRawString(), Game.focusedConsole().charPerLine, true);
+		lastLineSize = Game.getFocusedArea().charPerLine;
+		broken = addLinebreaks(getRawString(), Game.getFocusedArea().charPerLine, false);
+		broken_f = addLinebreaks(getRawString(), Game.getFocusedArea().charPerLine, true);
 	}
 	
 	public void renderFormatted(Graphics2D g, int x, int y, int padding){
+		renderFormatted(g, x, y, padding, true);
+	}
+	
+	public void renderFormatted(Graphics2D g, int x, int y, int padding, boolean doBreaks){
 
 		if(alwaysRaw){
-			renderRaw(g, x, y, padding);
+			renderRaw(g, x, y, padding, doBreaks);
 			return;
 		}
 		
 		List<TextStyle> styles = new ArrayList<TextStyle>();
 		currColor = g.getColor();
 		
-		if(lastLineSize != Game.focusedConsole().charPerLine) addBreaks();
+		if(lastLineSize != Game.getFocusedArea().charPerLine && doBreaks) addBreaks();
 		
 //		String[] lines = getRawString().split("(?<=\\G.{54})"); //https://stackoverflow.com/a/3761521
-		String[] lines = broken_f.split("\n");
+		String[] lines = (doBreaks ? broken_f : baseString).split("\n");
 		
 		if(f != null) g.setFont(f);
 		
-		for(int l = 0; l < lines.length; l++){
+		line: for(int l = 0; l < lines.length; l++){
 		
 			widthPrev = 0;
 			
@@ -156,10 +164,11 @@ public class FormattedString {
 				
 				boolean display = true;
 				
-				if(text == '\\' || text == '¶'){
+				if((text == '\\' && before != '\\') || text == '¶'){
 					display = false;
 					if(i+1 < lineLength) {
 						char next = line.charAt(i+1);
+						
 						if(next == 'b'){
 							styles.add(TextStyle.BOLD);
 						}else if(next == 'u'){
@@ -215,6 +224,9 @@ public class FormattedString {
     					break;
     				}
     				
+    				if(y + yOffset + yo > Game.getHeight()) return;
+    				if(y + yOffset + yo < 0) continue line;
+    				
     				byte[] bytes = textS.getBytes();
     				
     				try{
@@ -259,10 +271,14 @@ public class FormattedString {
 	}
 	
 	public void renderRaw(Graphics g, int x, int y, int padding){
+		renderRaw(g, x, y, padding, true);
+	}
+	
+	public void renderRaw(Graphics g, int x, int y, int padding, boolean doBreaks){
 
-		if(lastLineSize != Game.focusedConsole().charPerLine) addBreaks();
+		if(lastLineSize != Game.getFocusedArea().charPerLine) addBreaks();
 //		String[] lines = getRawString().split("(?<=\\G.{54})"); // https://stackoverflow.com/a/3761521
-		String[] lines = broken.split("\n");
+		String[] lines = (doBreaks ? broken : baseString).split("\n");
 		
 		if(f != null) g.setFont(f);
 		
@@ -350,8 +366,12 @@ public class FormattedString {
 	}
 
 	public void setRawString(String baseString) {
+		setRawString(baseString, true);
+	}
+	
+	public void setRawString(String baseString, boolean addBreaks) {
 		this.baseString = baseString;
-		addBreaks();
+		if(!this.baseString.isEmpty() && addBreaks) addBreaks();
 	}
 	
 	public static enum TextEffect {
@@ -370,6 +390,23 @@ public class FormattedString {
 		ret = ret.replaceAll("^", "");
 		
 		return ret;
+	}
+
+	public FormattedString[] split(String string) {
+		return split(string, true);
+	}
+	
+	public FormattedString[] split(String string, boolean addBreaks) {
+		String[] spl = baseString.split("\n", -1);
+		FormattedString[] ret = new FormattedString[spl.length];
+		for(int i = 0; i < spl.length; i++){
+			ret[i] = new FormattedString(spl[i], addBreaks);
+		}
+		return ret;
+	}
+
+	public void append(String str) {
+		baseString += str;
 	}
 	
 }
