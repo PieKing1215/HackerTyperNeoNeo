@@ -31,7 +31,7 @@ public class CommandCopy extends Command {
 
 			try {
 				if (newDir.getCanonicalPath().contains(Game.getFileDir().getCanonicalPath()) && newDir2.getCanonicalPath().contains(Game.getFileDir().getCanonicalPath())) {
-					System.out.println(newDir + " " + newDir.exists() + " " + newDir.isDirectory());
+//					System.out.println(newDir + " " + newDir.exists() + " " + newDir.isDirectory());
 					if (newDir.exists()) {
 						boolean overwrite = args.contains("-r");
 						if(!newDir2.exists() || overwrite){
@@ -40,7 +40,7 @@ public class CommandCopy extends Command {
     							copyDirectory(newDir, newDir2, overwrite);
     //							success = deleteDirectory(newDir);
     						}else{
-    							System.out.println("Copy " + newDir.getCanonicalPath() + " to " + newDir2.getCanonicalPath());
+//    							System.out.println("Copy " + newDir.getCanonicalPath() + " to " + newDir2.getCanonicalPath());
     							Files.copy(newDir.toPath(), newDir2.toPath());
     						}
     						
@@ -93,7 +93,7 @@ public class CommandCopy extends Command {
 			String relPath = child.getCanonicalPath().replace(source.getCanonicalPath(), "");
 			File childDest = new File(dest, relPath);
 			
-			System.out.println(child.getCanonicalPath() + " " + childDest.getCanonicalPath());
+//			System.out.println(child.getCanonicalPath() + " " + childDest.getCanonicalPath());
 			
 			if(child.isDirectory()){
 				copyDirectory(child, childDest, overwrite);

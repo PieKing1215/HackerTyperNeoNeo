@@ -126,7 +126,7 @@ public class CommandRun extends Command{
 			out.write((input + "\n").getBytes());
 			out.flush();
 			
-			System.out.println("avail = " + in.available());
+//			System.out.println("avail = " + in.available());
 			
 		}catch (IOException e) {
 			e.printStackTrace();

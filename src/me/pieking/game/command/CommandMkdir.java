@@ -31,7 +31,7 @@ public class CommandMkdir extends Command{
     		
     		try{
         		if(newDir.getCanonicalPath().contains(Game.getFileDir().getCanonicalPath())){
-        			System.out.println(newDir + " " + newDir.exists() + " " + newDir.isDirectory());
+//        			System.out.println(newDir + " " + newDir.exists() + " " + newDir.isDirectory());
             		if(newDir.exists()){
             			console.write("\\RA " + (newDir.isDirectory() ? "folder" : "file") + " with this name already exists.");
             			return false;

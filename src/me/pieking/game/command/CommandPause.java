@@ -43,7 +43,7 @@ public class CommandPause extends Command{
 	@Override
 	public void type(KeyEvent ev) {
 		running = false;
-		System.out.println("type" + ev.getKeyChar());
+//		System.out.println("type" + ev.getKeyChar());
 	}
 
 }

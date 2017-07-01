@@ -136,6 +136,25 @@ public class Console extends TextArea{
 					g.fillRect(fontSize + (cursorIndex+ofs - lastBreak)*fontW - 2, 2 + scrollOfs + yOfs + fontSize, 2, fontSize);
 				}
 			}
+			
+			if(selectStartIndex != -1){
+				
+				for(int i = Math.min(selectStartIndex, cursorIndex); i < Math.max(selectStartIndex, cursorIndex); i++){
+					try{
+						broken = FormattedString.addLinebreaks(prefix + typing, charPerLine).replace(" \n", "\n").substring(prefix.length(), cursorIndex+prefix.length());
+					}catch(StringIndexOutOfBoundsException e){}
+	    			
+	    			totalBreaks = broken.length() - broken.replace("\n", "").length();
+	    			lastBreak = broken.lastIndexOf("\n");
+	    			yOfs = lastOfs + (int) (totalBreaks * (g.getFont().getSize() * 1.15));
+	    		
+	    			int ofs = prefix.length()-1;
+					if(totalBreaks > 0) ofs = -1;
+					g.setColor(new Color(0.3f, 0.8f, 1f, 0.5f));
+					g.fillRect(fontSize + (i + ofs - lastBreak)*fontW, 2 + scrollOfs + yOfs + fontSize, fontW, fontSize + 2);
+				}
+			}
+			
 		}
 		
 		int minScroll = -(maxScroll-Game.getHeight() + fontSize*4);
@@ -230,7 +249,7 @@ public class Console extends TextArea{
 		sb.setLength(0);
 		
 		if(runningCommand != null && runningCommand.wantsInput){
-			System.out.println("running in " + cmd);
+			//System.out.println("running in " + cmd);
 			runningCommand.write(cmd);
 		}else{
     		write(prefix + cmd);
@@ -404,7 +423,7 @@ public class Console extends TextArea{
 			
 			canInput = true;
 		}, lastDelay += Rand.range(50, 110));
-		canInput = true;
+//		canInput = true;
 	}
 
 	public void setRunning(Command cmd) {

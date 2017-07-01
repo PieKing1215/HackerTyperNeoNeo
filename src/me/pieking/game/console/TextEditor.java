@@ -141,7 +141,7 @@ public class TextEditor extends TextArea {
             		base = base.replace("=\\W\"", "=\"");
             		base = p9.matcher(base).replaceAll("\\\\O$1\\\\W");
             		
-            		System.out.println(System.currentTimeMillis()-rStart);
+            		//System.out.println(System.currentTimeMillis()-rStart);
             		
             		lastDisplay = base;
         		}catch (Exception e1){

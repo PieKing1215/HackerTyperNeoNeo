@@ -32,7 +32,7 @@ public class CommandMove extends Command {
 
 			try {
 				if (newDir.getCanonicalPath().contains(Game.getFileDir().getCanonicalPath()) && newDir2.getCanonicalPath().contains(Game.getFileDir().getCanonicalPath())) {
-					System.out.println(newDir + " " + newDir.exists() + " " + newDir.isDirectory());
+//					System.out.println(newDir + " " + newDir.exists() + " " + newDir.isDirectory());
 					if (newDir.exists()) {
 						boolean overwrite = args.contains("-r");
 						if(!newDir2.exists() || overwrite){
@@ -41,7 +41,7 @@ public class CommandMove extends Command {
     							copyDirectory(newDir, newDir2, overwrite);
     //							success = deleteDirectory(newDir);
     						}else{
-    							System.out.println("Copy " + newDir.getCanonicalPath() + " to " + newDir2.getCanonicalPath());
+//    							System.out.println("Copy " + newDir.getCanonicalPath() + " to " + newDir2.getCanonicalPath());
     							Files.copy(newDir.toPath(), newDir2.toPath());
     						}
     						
@@ -49,7 +49,7 @@ public class CommandMove extends Command {
     						long fs2 = fileSize(newDir2);
     						
     						if(fs1 == fs2){
-    							System.out.println("del " + newRelativePath);
+//    							System.out.println("del " + newRelativePath);
     							console.runCommand("del " + newRelativePath);
     						}else{
     							console.write("\\RThe movement did not seem to complete, so the original file was not removed.");
@@ -100,7 +100,7 @@ public class CommandMove extends Command {
 			String relPath = child.getCanonicalPath().replace(source.getCanonicalPath(), "");
 			File childDest = new File(dest, relPath);
 			
-			System.out.println(child.getCanonicalPath() + " " + childDest.getCanonicalPath());
+//			System.out.println(child.getCanonicalPath() + " " + childDest.getCanonicalPath());
 			
 			if(child.isDirectory()){
 				copyDirectory(child, childDest, overwrite);

@@ -62,7 +62,7 @@ public class GetPixelColor {
 				}
 			}
 		}
-		System.out.println("No of rectangles = " + rectList.size());
+//		System.out.println("No of rectangles = " + rectList.size());
 		//printRect();
 		
 		return rectList;
@@ -72,7 +72,7 @@ public class GetPixelColor {
 		Rectangle r = null;
 		for (int i = 0; i < rectList.size(); i++) {
 			r = (Rectangle) rectList.get(i);
-			System.out.println("(" + r.getMinX() + "," + r.getMinY() + ")  (" + r.getMaxX() + "," + r.getMaxY() + ")");
+//			System.out.println("(" + r.getMinX() + "," + r.getMinY() + ")  (" + r.getMaxX() + "," + r.getMaxY() + ")");
 		}
 	}
 

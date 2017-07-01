@@ -40,7 +40,7 @@ public class CommandListFiles extends Command{
 			if(f.isDirectory()){
 				String name = f.getName();
 				String padding = new String(new char[maxSize - (name.length()+1)]).replace("\0", " ");
-				System.out.println(padding);
+//				System.out.println(padding);
 				console.write("/" + f.getName() + padding + humanReadableByteCount(folderSize(f), true));
 			}
 		}

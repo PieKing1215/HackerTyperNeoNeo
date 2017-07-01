@@ -4,9 +4,10 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.HeadlessException;
-import java.awt.Shape;
 import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseWheelEvent;
@@ -20,6 +21,7 @@ public class TextArea {
 
 	public String typing = "";
 	public int cursorIndex = typing.length();
+	public int selectStartIndex = typing.length();
 	
 	public int blinkTimer = 0;
 	public int fontSize = 20;
@@ -36,12 +38,26 @@ public class TextArea {
 	public int charPerLine = 78;
 	public boolean autoWrapLines = true;
 	
+	public boolean wasShiftPressed = false;
+	private int fontW;
+	
 	public void tick(){
 		if(scrollOfs < 0 && text.getRawString().isEmpty()) scrollOfs = 0;
 		blinkTimer++;
 		fontSize = 14;
 		maxLines = 128;
 		charPerLine = 78;
+		
+		boolean isShiftPressed = Game.keyHandler().isPressed(KeyEvent.VK_SHIFT);
+		if(isShiftPressed && !wasShiftPressed && selectStartIndex == -1){
+//			System.out.println("setSelect");
+			selectStartIndex = cursorIndex;
+		}
+		wasShiftPressed = isShiftPressed;
+		
+		
+//		System.out.println(typing.substring(Math.min(selectStartIndex, cursorIndex), Math.max(selectStartIndex, cursorIndex)));
+		
 	}
 	
 	public void render(Graphics2D g){
@@ -72,7 +88,7 @@ public class TextArea {
 		
 		line.renderFormatted(g, fontSize, fontSize*2 + lastOfs + scrollOfs, 1, autoWrapLines);
 		
-		int fontW = g.getFontMetrics().stringWidth("w")+1;
+		fontW = g.getFontMetrics().stringWidth("w")+1;
 		
 		String broken = "";
 		
@@ -101,6 +117,34 @@ public class TextArea {
 				g.fillRect(fontSize + (cursorIndex + ofs - lastBreak)*fontW, fontSize*2 + scrollOfs + yOfs, fontW, 2);
 			}else{
 				g.fillRect(fontSize + (cursorIndex + ofs - lastBreak)*fontW - 2, 2 + scrollOfs + yOfs + fontSize, 2, fontSize);
+			}
+		}
+		
+		if(selectStartIndex != -1){
+			
+			for(int i = Math.min(selectStartIndex, cursorIndex); i < Math.max(selectStartIndex, cursorIndex); i++){
+    			if(!autoWrapLines) {
+    				try{
+    					broken = typing.substring(0, i);
+    				}catch(StringIndexOutOfBoundsException e){
+    					broken = typing;
+    				}
+    			}else{
+    				try{
+    					broken = FormattedString.addLinebreaks(typing, charPerLine).replace(" \n", "\n").substring(0, i);
+    				}catch(StringIndexOutOfBoundsException e){
+    					broken = FormattedString.addLinebreaks(typing, charPerLine).replace(" \n", "\n");
+    				}
+    			}
+    			
+    			totalBreaks = broken.length() - broken.replace("\n", "").length();
+    			lastBreak = broken.lastIndexOf("\n");
+    			yOfs = lastOfs + (int) (totalBreaks * (g.getFont().getSize() * 1.15));
+    		
+				int ofs = 0-1;
+				if(totalBreaks > 0) ofs = -1;
+				g.setColor(new Color(0.3f, 0.8f, 1f, 0.5f));
+				g.fillRect(fontSize + (i + ofs - lastBreak)*fontW, 2 + scrollOfs + yOfs + fontSize, fontW, fontSize + 2);
 			}
 		}
 		
@@ -187,6 +231,19 @@ public class TextArea {
 	}
 	
 	public void left() {
+		
+		if(!Game.keyHandler().isPressed(KeyEvent.VK_SHIFT)){
+			if(selectStartIndex != -1){
+    			if(cursorIndex > selectStartIndex){
+    				cursorIndex = selectStartIndex;
+    			}
+    			
+    			selectStartIndex = -1;
+    			
+    			return;
+			}
+		}
+		
 		blinkTimer = 0;
 		
 		if(Game.keyHandler().isPressed(KeyEvent.VK_CONTROL)){
@@ -202,10 +259,62 @@ public class TextArea {
 		}else{
 			if(cursorIndex > 0) cursorIndex--;
 		}
+		
+		scrollToCursor();
 	}
 
+	public void scrollToCursor(){
+		String broken = "";
+		
+		if(!autoWrapLines) {
+			try{
+				broken = typing.substring(0, cursorIndex);
+			}catch(StringIndexOutOfBoundsException e){
+				broken = typing;
+			}
+		}else{
+			try{
+				broken = FormattedString.addLinebreaks(typing, charPerLine).replace(" \n", "\n").substring(0, cursorIndex);
+			}catch(StringIndexOutOfBoundsException e){
+				broken = FormattedString.addLinebreaks(typing, charPerLine).replace(" \n", "\n");
+			}
+		}
+		
+		int totalBreaks = broken.length() - broken.replace("\n", "").length();
+		int yOfs = (int) (totalBreaks * (fontSize * 1.15));
+	
+//		System.out.println((2 + scrollOfs + yOfs + fontSize));
+		
+//		System.out.println(scrollOfs);
+		
+		int y = (2 + scrollOfs + yOfs + fontSize);
+		
+		if(y >= Game.getHeight()) {
+			scrollOfs -= Math.abs(y) - Game.getHeight();
+			scroll(2);
+		}
+		if(y <= 0) {
+			scrollOfs += Math.abs(y);
+			scroll(-1);
+		}
+		
+//		System.out.println(scrollOfs);
+	}
+	
 	public void right() {
 		blinkTimer = 0;
+		
+		if(!Game.keyHandler().isPressed(KeyEvent.VK_SHIFT)){
+			if(selectStartIndex != -1){
+    			if(selectStartIndex > cursorIndex){
+    				cursorIndex = selectStartIndex;
+    			}
+    			
+    			selectStartIndex = -1;
+    			
+    			return;
+			}
+		}
 		
 		if(Game.keyHandler().isPressed(KeyEvent.VK_CONTROL)){
 			
@@ -231,11 +340,47 @@ public class TextArea {
 		}else{
 			if(cursorIndex < typing.length()) cursorIndex++;
 		}
+		
+		scrollToCursor();
 	}
 	
 	public void type(KeyEvent e){
 		
+		scrollToCursor();
+		
 		StringBuilder sb = new StringBuilder(typing);
+		
+		boolean hadSelection = false;
+		
+//		System.out.println((int)e.getKeyChar());
+		
+		if(selectStartIndex != -1){
+			String sub = sb.substring(Math.min(selectStartIndex, cursorIndex), Math.max(selectStartIndex, cursorIndex));
+			if(!Game.keyHandler().isPressed(KeyEvent.VK_CONTROL)){
+    			sb.delete(Math.min(selectStartIndex, cursorIndex), Math.max(selectStartIndex, cursorIndex));
+    			if(cursorIndex > selectStartIndex) cursorIndex -= sub.length();
+    			selectStartIndex = -1;
+			}else{
+				if((int)e.getKeyChar() == 22 /* CTRL + V */){
+					sb.delete(Math.min(selectStartIndex, cursorIndex), Math.max(selectStartIndex, cursorIndex));
+	    			if(cursorIndex > selectStartIndex) cursorIndex -= sub.length();
+	    			selectStartIndex = -1;
+				}else if((int)e.getKeyChar() == 3 /* CTRL + C */){
+					StringSelection stringSelection = new StringSelection(sub);
+					Clipboard clpbrd = Toolkit.getDefaultToolkit().getSystemClipboard();
+					clpbrd.setContents(stringSelection, null);
+				}else if((int)e.getKeyChar() == 24 /* CTRL + X */){
+					StringSelection stringSelection = new StringSelection(sub);
+					Clipboard clpbrd = Toolkit.getDefaultToolkit().getSystemClipboard();
+					clpbrd.setContents(stringSelection, null);
+					sb.delete(Math.min(selectStartIndex, cursorIndex), Math.max(selectStartIndex, cursorIndex));
+	    			if(cursorIndex > selectStartIndex) cursorIndex -= sub.length();
+	    			selectStartIndex = -1;
+				}
+			}
+			
+			hadSelection = true;
+		}
 		
 		if((int)e.getKeyChar() == KeyEvent.VK_ESCAPE /* http://stackoverflow.com/a/15693905 */){
 			escape();
@@ -243,14 +388,14 @@ public class TextArea {
 		}
 		
 		if((int)e.getKeyChar() == KeyEvent.VK_BACK_SPACE /* http://stackoverflow.com/a/15693905 */){
-			if(sb.length() > 0){
+			if(sb.length() > 0 && !hadSelection){
 				if(cursorIndex > 0) {
 					sb.deleteCharAt(cursorIndex-1);
 					left();
 				}
 			}
 		}else if((int)e.getKeyChar() == KeyEvent.VK_DELETE /* http://stackoverflow.com/a/15693905 */){
-			if(sb.length() > 0){
+			if(sb.length() > 0 && !hadSelection){
 				if(cursorIndex < sb.length()) {
 					sb.deleteCharAt(cursorIndex);
 				}

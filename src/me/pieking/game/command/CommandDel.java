@@ -31,7 +31,7 @@ public class CommandDel extends Command {
 
 			try {
 				if (newDir.getCanonicalPath().contains(Game.getFileDir().getCanonicalPath())) {
-					System.out.println(newDir + " " + newDir.exists() + " " + newDir.isDirectory());
+//					System.out.println(newDir + " " + newDir.exists() + " " + newDir.isDirectory());
 					if (newDir.exists()) {
 						boolean success = true;
 						if(newDir.isDirectory()){
@@ -42,7 +42,7 @@ public class CommandDel extends Command {
 						
 						if(currentDir.getCanonicalPath().contains(newDir.getCanonicalPath())){
 							console.setDirectory(newDir.getCanonicalPath().replace(currentDir.getCanonicalPath(), "").replace(Game.getFileDir().getCanonicalPath(), ""));
-							System.out.println("up to" + newDir.getCanonicalPath().replace(currentDir.getCanonicalPath(), ""));
+//							System.out.println("up to" + newDir.getCanonicalPath().replace(currentDir.getCanonicalPath(), ""));
 						}
 						
 						if(!success){
@@ -78,7 +78,7 @@ public class CommandDel extends Command {
 					return false;
 				}
 			}
-			System.out.println("deleting " + dir + " with " + dir.listFiles().length + " children.");
+//			System.out.println("deleting " + dir + " with " + dir.listFiles().length + " children.");
 			try{
 				Files.delete(dir.toPath());
 				return true;

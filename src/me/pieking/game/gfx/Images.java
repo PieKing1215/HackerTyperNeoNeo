@@ -73,7 +73,7 @@ public class Images extends Thread{
 		try{
 			try{
 				img = new ImageIcon(new URL(name).toURI().toURL()).getImage();	
-				System.out.println("load " + img.getWidth(null) + " " + img.getHeight(null));
+				Logger.info("load " + img.getWidth(null) + " " + img.getHeight(null), Logger.VB_DEV_ONLY);
 			}catch(Exception e){
 				e.printStackTrace();
 			}
