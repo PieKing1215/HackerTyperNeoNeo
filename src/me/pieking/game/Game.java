@@ -2,13 +2,18 @@ package me.pieking.game;
 
 import java.awt.Dimension;
 import java.awt.Point;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.Sequencer;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.filechooser.FileSystemView;
@@ -23,6 +28,7 @@ import me.pieking.game.gfx.Disp;
 import me.pieking.game.gfx.Fonts;
 import me.pieking.game.gfx.FormattedString;
 import me.pieking.game.gfx.Render;
+import me.pieking.game.net.Client;
 import me.pieking.game.sound.Sound;
 
 public class Game {
@@ -36,6 +42,7 @@ public class Game {
 	private static boolean running = false;
 	
 	private static int fps = 0;
+	private static int lastFps = 0;
 	private static int tps = 0;
 	
 	private static JFrame frame;
@@ -52,6 +59,7 @@ public class Game {
 	
 	public static int glitchLevels = 0;
 	private static TextArea focused;
+	private static int ddosLevels;
 	
 	public static void main(String[] args) {
 //		Map charSets = Charset.availableCharsets();
@@ -69,6 +77,66 @@ public class Game {
 //	          System.out.print(", ");
 //	      }
 //	      System.out.println();
+//	    }
+		
+//		Toolkit.getDefaultToolkit().beep();
+		
+//		int channel = 0; // 0 is a piano, 9 is percussion, other channels are for other instruments
+//
+//	    int volume = 80; // between 0 et 127
+//	    int duration = 200; // in milliseconds
+//
+//	    try {
+//	        Synthesizer synth = MidiSystem.getSynthesizer();
+//	        synth.open();
+//	        MidiChannel[] channels = synth.getChannels();
+//
+//	        for(int i = 0; i < channels.length; i++){
+//	        	MidiChannel c = channels[i];
+//	        	System.out.println(i);
+//	        	if(c != null){
+//	        		c.noteOn( 60, volume ); // C note
+//	    	        Thread.sleep( duration );
+//	    	        c.noteOff( 60 );
+//	    	        Thread.sleep(200);
+//	        	}
+//	        }
+//	        
+//	        Thread.sleep(500);
+//	        
+////	        // --------------------------------------
+////	        // Play a few notes.
+////	        // The two arguments to the noteOn() method are:
+////	        // "MIDI note number" (pitch of the note),
+////	        // and "velocity" (i.e., volume, or intensity).
+////	        // Each of these arguments is between 0 and 127.
+////	        channels[channel].noteOn( 60, volume ); // C note
+////	        Thread.sleep( duration );
+////	        channels[channel].noteOff( 60 );
+////	        channels[channel].noteOn( 62, volume ); // D note
+////	        Thread.sleep( duration );
+////	        channels[channel].noteOff( 62 );
+////	        channels[channel].noteOn( 64, volume ); // E note
+////	        Thread.sleep( duration );
+////	        channels[channel].noteOff( 64 );
+////
+////	        Thread.sleep( 500 );
+////
+////	        // --------------------------------------
+////	        // Play a C major chord.
+////	        channels[channel].noteOn( 60, volume ); // C
+////	        channels[channel].noteOn( 64, volume ); // E
+////	        channels[channel].noteOn( 67, volume ); // G
+////	        Thread.sleep( 3000 );
+////	        channels[channel].allNotesOff();
+////	        Thread.sleep( 500 );
+//
+//
+//
+//	        synth.close();
+//	    }
+//	    catch (Exception e) {
+//	        e.printStackTrace();
 //	    }
 		
 		run();
@@ -118,6 +186,7 @@ public class Game {
 			
 			if(System.currentTimeMillis() - timer >= 1000){
 				timer = System.currentTimeMillis();
+				lastFps = fps;
 				fps = frames;
 				tps = ticks;
 				frames = 0;
@@ -149,25 +218,73 @@ public class Game {
 		
 		frame.add(disp);
 		
+		Sound.init();
+		Sound.boot.stop();
+		Sound.boot.start();
 		frame.setVisible(true);
 		
-		Sound.init();
+		
 		Fonts.init();
 		Command.registerDefaultCommands();
 		
 		mainConsole = new Console();
 		mainConsole.setMaxLines(100);
-		mainConsole.startup();
 		
 		editor = new TextEditor();
 		editor.setFile("editor.txt");
 
 		setFocusedArea(mainConsole);
+		mainConsole.startup();
+		
 		
 //		mainConsole.setDirectory("/test");
 	}
 	
 	private static void tick(){
+		
+		Client.tick();
+		
+//		ddosLevels = 0;
+		
+		if(ddosLevels > 0){
+    		int lagFactor = 110 - ddosLevels;
+    		
+    		if(Rand.oneIn(110 - ddosLevels)){
+    			int delayLevels = ddosLevels * 2;
+    			
+    			int minDelay = delayLevels - 20;
+    			if(minDelay < 10) minDelay = 10;
+    			
+    			int maxDelay = delayLevels + 10;
+    			if(maxDelay < 20) maxDelay = 20;
+    			try {
+        			Thread.sleep(Rand.range(minDelay, maxDelay));
+        		}catch (InterruptedException e) {
+        			e.printStackTrace();
+        		}
+    		}
+    		
+    		if(Rand.oneIn(110 - ddosLevels)) lagFactor = 10;
+    		
+    		if(lagFactor < 10) lagFactor = 10;
+		
+    		if(fps > 20){
+    			long delay = fps/lagFactor;
+        		try {
+        			Thread.sleep(delay);
+        		}catch (InterruptedException e) {
+        			e.printStackTrace();
+        		}
+    		}else if(lastFps > 20){
+    			long delay = lastFps/lagFactor;
+        		try {
+        			Thread.sleep(delay);
+        		}catch (InterruptedException e) {
+        			e.printStackTrace();
+        		}
+    		}
+		}
+		
 		if(Game.getTime() % 10 == 0){
     		String title = name + " v" + version + " | " + fps + " FPS " + tps + " TPS";
     		
@@ -185,6 +302,8 @@ public class Game {
     		frame.setTitle(title);
 		}
 		
+//		glitchLevels = 0;
+
 //		if(Game.getTime() % 60 == 0) {
 //			glitchLevels++;
 //			System.out.println(glitchLevels);
@@ -324,6 +443,8 @@ public class Game {
 		mainConsole.canInput = false;
 		mainConsole.clear();
 		mainConsole.setRunning(null);
+		Sound.boot.stop();
+		Sound.boot.start();
 		mainConsole.startup();
 	}
 

@@ -1,7 +1,14 @@
 package me.pieking.game.sound;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.Sequencer;
 
 import me.pieking.game.Logger;
 
@@ -81,6 +88,10 @@ public class Sound {
 	//public static Minim minim;
 	
 	private static SoundClip test;
+	public static SoundClip startup;
+	public static SoundClip boot;
+	public static RandomSoundClip type;
+	public static RandomSoundClip type_space;
 	
 	public static void init(){
 		Logger.info("Starting sound system...");
@@ -92,6 +103,19 @@ public class Sound {
 		
 		test = loadSound("volume.ogg");
 		test.setVolume(0.1f);
+		
+		startup = loadSound("startup.ogg");
+		startup.setVolume(1f);
+		
+		boot = loadSound("booting.ogg");
+		boot.setVolume(0.5f);
+		
+		type = loadRandomSound("type_", 6);
+		type.setPriority(true);
+		
+		type_space = loadRandomSound("type_space_", 4);
+		type_space.setPriority(true);
+		type_space.setVolume(0.5f);
 	}
 	
 	public static void shutdown(int state){
@@ -171,6 +195,18 @@ public class Sound {
 	public static void soundTest(){
 		test.stop();
 		test.start();
+	}
+	
+	public static void playMidi(File f){
+		try{
+            Sequencer sequencer = MidiSystem.getSequencer();
+            sequencer.open();
+            InputStream is = new BufferedInputStream(new FileInputStream(f));
+            sequencer.setSequence(is);
+            sequencer.start();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 	
 }

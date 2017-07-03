@@ -25,6 +25,9 @@ public abstract class Command {
 		registerCommand(new CommandRun());
 		registerCommand(new CommandReboot());
 		registerCommand(new CommandEdit());
+		registerCommand(new CommandIpInfo());
+		registerCommand(new CommandMessage());
+		registerCommand(new CommandACE());
 	}
 	
 	/**

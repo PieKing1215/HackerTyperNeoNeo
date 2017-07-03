@@ -13,8 +13,9 @@ public class Render {
 	
 	public static void render(Disp d) {
 		Graphics2D g = d.getRenderGraphics();
-		
 		g.clearRect(0, 0, d.getWidth(), d.getHeight());
+		
+//		g.drawRect(100 + (int)(Math.sin(Game.getTime()/10f)*20), 100 + (int)(Math.cos(Game.getTime()/10f)*20), 20, 20);
 		
 		Game.getFocusedArea().render(g);
 	}

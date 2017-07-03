@@ -56,6 +56,7 @@ public class CommandRun extends Command{
         						cancel.set(false);
         						running = true;
         						try{
+//        							System.out.println("===========");
         							Jasic.runFile(newDir, console, in, cancel);
         						}catch(Exception e){
         							e.printStackTrace();
@@ -125,9 +126,6 @@ public class CommandRun extends Command{
 		if(running) try {
 			out.write((input + "\n").getBytes());
 			out.flush();
-			
-//			System.out.println("avail = " + in.available());
-			
 		}catch (IOException e) {
 			e.printStackTrace();
 		}

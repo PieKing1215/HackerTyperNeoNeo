@@ -40,7 +40,11 @@ public class TextEditor extends TextArea {
 			cursorIndex = 0;
 			try {
 				String raw = Utils.readFile(file);
-				typing = raw.substring(0, raw.length()-1);
+				try{
+					typing = raw.substring(0, raw.length()-1);
+				}catch(Exception e){
+					typing = "";
+				}
 //				System.out.println("|" + typing + "|");
 			}catch (IOException e) {
 				e.printStackTrace();
@@ -48,7 +52,7 @@ public class TextEditor extends TextArea {
 				typing = "";
 			}
 			lastSaved = typing;
-			formatTimer = 1;
+			formatTimer = 2;
 		}
 	}
 	

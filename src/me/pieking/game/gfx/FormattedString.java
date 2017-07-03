@@ -63,7 +63,8 @@ public class FormattedString {
 	 * Credit to <a href="https://stackoverflow.com/a/7528259">https://stackoverflow.com/a/7528259</a>.
 	 */
 	public static String addLinebreaks(String input, int maxLineLength, boolean removeSpecial) {
-	    StringBuilder output = new StringBuilder(input.length());
+	    if(input.isEmpty()) return input;
+		StringBuilder output = new StringBuilder(input.length());
 	    int lineLen = 0;
 
 	    String[] spl = input.split(" (?!( |\n))"); // split at spaces before non-spaces (preserves multiple-space gaps)
@@ -82,6 +83,7 @@ public class FormattedString {
 	        lineLen += length;
 	    }
 	    
+	    if(output.toString().isEmpty()) return output.toString();
 	    return output.toString().substring(0, output.toString().length()-1);
 	}
 	

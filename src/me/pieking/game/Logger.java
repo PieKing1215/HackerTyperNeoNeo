@@ -7,9 +7,10 @@ public class Logger {
 	
 	public static final int VB_NONE = -1;
 	public static final int VB_NORMAL = 0;
+	public static final int VB_NET = 1;
 	public static final int VB_DEV_ONLY = 100;
 	
-	private static int verbosity = VB_NORMAL; //higher = more verbose
+	private static int verbosity = VB_NET; //higher = more verbose
 	
 	public static void info(String msg){
 		info(msg, 0);
@@ -17,6 +18,10 @@ public class Logger {
 	
 	public static void warn(String msg){
 		warn(msg, 0);
+	}
+	
+	public static void error(String msg){
+		error(msg, 0);
 	}
 	
 	public static void fatal(String msg, ExitState state){
@@ -30,6 +35,10 @@ public class Logger {
 	
 	public static void warn(String msg, int verbosity){
 		if(Logger.verbosity >= verbosity) plainErr("[WARN] " + msg);
+	}
+	
+	public static void error(String msg, int verbosity){
+		if(Logger.verbosity >= verbosity) plainErr("[ERROR] " + msg);
 	}
 	
 	public static void plainOut(String msg){
@@ -46,7 +55,8 @@ public class Logger {
 	public static enum ExitState {
 		UNKNOWN(-50),
 		OK(0),
-		SERVER_RUN_ERROR(101);
+		SERVER_RUN_ERROR(101), 
+		NO_SERVER(1);
 		
 		public int code = 0;
 		

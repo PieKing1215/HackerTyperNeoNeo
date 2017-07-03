@@ -24,7 +24,7 @@ public class TextArea {
 	public int selectStartIndex = typing.length();
 	
 	public int blinkTimer = 0;
-	public int fontSize = 20;
+	public int fontSize = 14;
 	public int maxScroll;
 	
 	public int scrollOfs = 0;
@@ -32,7 +32,7 @@ public class TextArea {
 	public boolean canInput = false;
 	
 	public FormattedString text = new FormattedString("");
-	public int maxLines = 5;
+	public int maxLines = 128;
 	public boolean deleteLines = false;
 	
 	public int charPerLine = 78;
@@ -44,9 +44,6 @@ public class TextArea {
 	public void tick(){
 		if(scrollOfs < 0 && text.getRawString().isEmpty()) scrollOfs = 0;
 		blinkTimer++;
-		fontSize = 14;
-		maxLines = 128;
-		charPerLine = 78;
 		
 		boolean isShiftPressed = Game.keyHandler().isPressed(KeyEvent.VK_SHIFT);
 		if(isShiftPressed && !wasShiftPressed && selectStartIndex == -1){

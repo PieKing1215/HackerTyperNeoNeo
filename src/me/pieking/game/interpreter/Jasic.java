@@ -1,5 +1,6 @@
 package me.pieking.game.interpreter;
 
+import java.beans.Expression;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -7,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -208,7 +211,7 @@ public class Jasic {
             	break;
             case WORD:
 //            	////System.out.println(c);
-                if (Character.isLetterOrDigit(c) || c == '[' || c == ']' || c == '{' || c == '}' || c == ',' || c == '_' || c == '?') {
+                if (Character.isLetterOrDigit(c) || c == '[' || c == ']' || c == '{' || c == '}' || c == '_' || c == '?') {
                     token += c;
                 } else if (c == ':') {
                     tokens.add(new Token(token, TokenType.LABEL));
@@ -375,10 +378,14 @@ public class Jasic {
                     statements.add(new InputStatement(consume(TokenType.WORD).text, j));
                 } else if (match("goto")) {
                     statements.add(new GotoStatement(consume(TokenType.WORD).text));
+                } else if (match("gotovar")) {
+                    statements.add(new GotoVarStatement(expression()));
                 } else if (match("sleep")) {
                     statements.add(new SleepStatement(expression()));
                 } else if (match("sub")) {
                     statements.add(new SubStatement(consume(TokenType.WORD).text));
+                } else if (match("subvar")) {
+                    statements.add(new SubVarStatement(expression()));
                 } else if (match("return")) {
                     statements.add(new ReturnStatement());
                 } else if (match("if")) {
@@ -453,7 +460,33 @@ public class Jasic {
          */
         private Expression atomic() {
         	//System.out.println("atomic " + last(1).text); 
+//        	System.out.println("last = " + last(1).text);
+//        	System.out.println("this = " + get(0).text);
+//        	System.out.println("next = " + get(1).text);
             if (match(TokenType.WORD)) {
+            	String word = last(1).text;
+            	
+            	if(methods.containsKey(word)){
+                	if(match(TokenType.LEFT_PAREN)){
+                		List<Expression> exp = new ArrayList<Jasic.Expression>();
+                		while(!match(TokenType.RIGHT_PAREN)){
+                			exp.add(expression());
+                		}
+                		
+                		Class<? extends MethodExpression> methodClass = methods.get(word);
+                		try {
+                			Constructor<? extends MethodExpression> cons = methodClass.getConstructor(Jasic.class, Expression[].class); //TODO: figure out why there's this extra Jasic.class in the reflection constructor
+							
+                			Object[] parameters = new Object[2];
+                			parameters[0] = j;
+                			parameters[1] = exp.toArray(new Expression[exp.size()]);
+                			
+                			return cons.newInstance(parameters);
+						}catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+							e.printStackTrace();
+						}
+                	}
+            	}
                 return new VariableExpression(last(1).text);
             } else if (match(TokenType.NUMBER)) {
                 return new NumberValue(Double.parseDouble(last(1).text));
@@ -464,6 +497,7 @@ public class Jasic {
             } else if (match(TokenType.ARRAYLITERAL)) {
                 return new ArrayValue((Object)last(1).text);
             } else if (match(TokenType.LEFT_PAREN)) {
+            	System.out.println("paren");
                 // The contents of a parenthesized expression can be any
                 // expression. This lets us "restart" the precedence cascade
                 // so that you can have a lower precedence expression inside
@@ -675,7 +709,9 @@ public class Jasic {
             try {
             	Command running = j.cons.getRunning();
             	
-            	if(running != null){
+            	if(j.cons.runningAC){
+            		j.cons.acWantsInput = true;
+            	}else if(running != null){
             		if(running instanceof CommandRun){
             			running.wantsInput = true;
             		}
@@ -687,7 +723,9 @@ public class Jasic {
                 
                 ////System.out.println(input);
                 
-                if(running != null){
+                if(j.cons.runningAC){
+            		j.cons.acWantsInput = false;
+            	}else if(running != null){
             		if(running instanceof CommandRun){
             			running.wantsInput = false;
             		}
@@ -978,6 +1016,25 @@ public class Jasic {
     }
     
     /**
+     * A "gotovar" acts like a goto, but jumps to the label with the name of a variable.
+     */
+    public class GotoVarStatement implements Statement {
+        public GotoVarStatement(Expression expression) {
+            this.exp = expression;
+        }
+        
+        public void execute(AtomicBoolean cancel) {
+        	String label = exp.evaluate().toString();
+        	
+            if (labels.containsKey(label)) {
+                currentStatement = labels.get(label).intValue();
+            }
+        }
+
+        private final Expression exp;
+    }
+    
+    /**
      * A "sleep" statement waits a certain amount of time.
      */
     public class SleepStatement implements Statement {
@@ -1012,6 +1069,24 @@ public class Jasic {
         }
 
         private final String label;
+    }
+    
+    public class SubVarStatement implements Statement {
+    	
+        public SubVarStatement(Expression expression) {
+            this.exp = expression;
+        }
+        
+        public void execute(AtomicBoolean cancel) {
+        	String label = exp.evaluate().toString();
+            if (labels.containsKey(label) && returnTo.size() < 100) {
+            	//System.out.println("sub " + label);
+            	returnTo.add(currentStatement);
+                currentStatement = labels.get(label).intValue();
+            }
+        }
+
+        private final Expression exp;
     }
     
     public class ReturnStatement implements Statement {
@@ -1082,6 +1157,55 @@ public class Jasic {
         }
         
         private final String name;
+    }
+    
+    @SuppressWarnings("serial")
+	public HashMap<String, Class<? extends MethodExpression>> methods = new HashMap<String, Class<? extends MethodExpression>>(){{
+    	put("toLowerCase", MethodToLowercase.class);
+    	put("toUpperCase", MethodToUppercase.class);
+    	put("equalsIgnoreCase", MethodEqualsIgnoreCase.class);
+    }};
+    
+    
+    /**
+     * A variable expression evaluates to the current value stored in that
+     * variable.
+     */
+    public abstract class MethodExpression implements Expression {
+        public MethodExpression(Expression[] exp) {
+            this.exp = exp;
+        }
+        
+        public abstract Value evaluate();
+        
+        protected final Expression[] exp;
+    }
+    
+    public class MethodToLowercase extends MethodExpression{
+		public MethodToLowercase(Expression[] exp) { 
+			super(exp); 
+		}
+
+		@Override public Value evaluate() {
+			return new StringValue(exp[0].evaluate().toString().toLowerCase());
+		}
+    }
+    
+    public class MethodToUppercase extends MethodExpression{
+		public MethodToUppercase(Expression[] exp) { super(exp); }
+
+		@Override public Value evaluate() {
+			return new StringValue(exp[0].evaluate().toString().toUpperCase());
+		}
+    }
+    
+    public class MethodEqualsIgnoreCase extends MethodExpression{
+		public MethodEqualsIgnoreCase(Expression[] exp) { super(exp); }
+
+		@Override public Value evaluate() {
+			boolean equals = exp[0].evaluate().toString().equalsIgnoreCase(exp[1].evaluate().toString());
+			return new NumberValue(equals ? 1 : 0);
+		}
     }
     
     /**
@@ -1423,6 +1547,10 @@ public class Jasic {
     public void interpret(String source, AtomicBoolean cancel) {
         // Tokenize.
         List<Token> tokens = tokenize(source);
+        
+//        for(Token t : tokens){
+//        	System.out.println(t.type + " " + t.text);
+//        }
         
         // Parse.
         Parser parser = new Parser(tokens, this);

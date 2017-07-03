@@ -1,7 +1,7 @@
 run "cls"
 
 ' global variables
-VERSION = "0.0.2 (DASIC port)"
+VERSION = "0.0.3 (DASIC port)"
 SEPERATOR = "-----------------------------------------------------------------------------"
 RUNNING = 1
 ACTION_BAR = "\O [\uF\nIGHT]      [\uA\nCT]      [\uI\nTEM]     [\uM\nERCY]"
@@ -86,8 +86,8 @@ mainLoop:
     input I$
     print "? " + I$
     print ""
-    if I$="Y" then yes
-    if I$="N" then no
+    if equalsIgnoreCase(I$,"Y") then yes
+    if equalsIgnoreCase(I$,"N") then no
     goto cont
     no:
         RUNNING = 0
@@ -138,22 +138,14 @@ battle: ' battle routine
     run "cls"
     sub printHeader
     
-    if in="FIGHT" then fight
-    if in="fight" then fight
-    if in="F" then fight
-    if in="f" then fight
-    if in="ACT" then act
-    if in="A" then act
-    if in="act" then act
-    if in="a" then act
-    if in="ITEM" then item
-    if in="I" then item
-    if in="item" then item
-    if in="i" then item
-    if in="MERCY" then mercy
-    if in="M" then mercy
-    if in="mercy" then mercy
-    if in="m" then mercy
+    if equalsIgnoreCase(in,"FIGHT") then fight
+    if equalsIgnoreCase(in,"F") then fight
+    if equalsIgnoreCase(in,"ACT") then act
+    if equalsIgnoreCase(in,"A") then act
+    if equalsIgnoreCase(in,"ITEM") then item
+    if equalsIgnoreCase(in,"I") then item
+    if equalsIgnoreCase(in,"MERCY") then mercy
+    if equalsIgnoreCase(in,"M") then mercy
     
     print " * '" + in + "' isn't an option"
     goto battle
@@ -231,31 +223,29 @@ battle: ' battle routine
         sub printHeader
         
         actSelLoop:
-            if aSel="BACK" then back
-            if aSel="back" then back
-            if aSel="B" then back
-            if aSel="b" then back
+            if equalsIgnoreCase(aSel,"back") then back
+            if equalsIgnoreCase(aSel,"b") then back
             
-            if aSel="CHECK" then check
-            if aSel="Check" then check
-            if aSel="check" then check
+            if equalsIgnoreCase(aSel,"check") then check
             
-            if aSel="COMPLIMENT" then compliment
-            if aSel="Compliment" then compliment
-            if aSel="compliment" then compliment
+            actValid = 0
             
-            if aSel="THREAT" then threat
-            if aSel="Threat" then threat
-            if aSel="threat" then threat
+            actIter = 0
+            actSelLoop:
+                if equalsIgnoreCase(aSel,acts[actIter])=0 then aSelLoopEnd
+                    actValid = 1
+                aSelLoopEnd:
+            actIter = actIter+1
+            if actIter < actCt then actSelLoop
             
+            if actValid then doAct
             ' else
                 print " * '" + aSel + "' isn't an option."
-            goto actSelLoopFinish
-            compliment:
-                sub actCompliment
-            goto breakActSelLoop
-            threat:
-                sub actThreat
+                print ""
+            goto act
+            doAct:
+                sleep 500
+                subvar "act" + toUpperCase(aSel)
             goto breakActSelLoop
             check:
                 print " * " + M_NAME + " " + M_ATK + " ATK " + M_DEF + " DEF"
@@ -295,10 +285,8 @@ battle: ' battle routine
             print ""
             
             pickingItem:
-                if iSel="BACK" then back
-                if iSel="back" then back
-                if iSel="B" then back
-                if iSel="b" then back
+                if equalsIgnoreCase(iSel,"back") then back
+                if equalsIgnoreCase(iSel,"b") then back
                 
                 run "cls"
                 sub printHeader
@@ -343,7 +331,7 @@ battle: ' battle routine
             print " * Spare"
         goto yellowSpareEnd
         yellowSpare:
-            print "\Y* Spare"
+            print " \Y* Spare"
         yellowSpareEnd:
         
         print " * Flee"
@@ -354,23 +342,17 @@ battle: ' battle routine
         print ""
         
         mercyLoop:
-            if mSel="BACK" then back
-            if mSel="back" then back
-            if mSel="B" then back
-            if mSel="b" then back
+            if equalsIgnoreCase(mSel,"BACK") then back
+            if equalsIgnoreCase(mSel,"B") then back
             
             run "cls"
             sub printHeader
             
-            if mSel="SPARE" then mSpare
-            if mSel="spare" then mSpare
-            if mSel="S" then mSpare
-            if mSel="s" then mSpare
+            if equalsIgnoreCase(mSel,"SPARE") then mSpare
+            if equalsIgnoreCase(mSel,"S") then mSpare
             
-            if mSel="FLEE" then mFlee
-            if mSel="flee" then mFlee
-            if mSel="F" then mFlee
-            if mSel="f" then mFlee
+            if equalsIgnoreCase(mSel,"FLEE") then mFlee
+            if equalsIgnoreCase(mSel,"F") then mFlee
             ' else
                 print " * '" + mSel + "' isn't an option."
             goto finishMercyLoop
@@ -449,7 +431,7 @@ battle: ' battle routine
             print "                                           "
             print "               GAME  OVER                  "
             print "                You Died!                  "
-            print "         You collected " + P_GOLD +" Gold! "
+            print "         \YYou collected " + P_GOLD + " Gold!"
             print "                                           "
             print "###########################################"
             goto exit
@@ -532,12 +514,12 @@ printHeader:
     print ""
 return
 
-actCompliment:
+actCOMPLIMENT:
     print " * " + M_NAME + " didn't understand what you said, but was flattered anyway."
     M_CANSPARE = 1
 return
 
-actThreat:
+actTHREAT:
     print " * " + M_NAME + " didn't understand what you said, but was scared anyway."
     M_CANSPARE = 1
 return

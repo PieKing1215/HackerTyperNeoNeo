@@ -12,9 +12,12 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseWheelEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.pieking.game.Game;
 import me.pieking.game.Rand;
@@ -25,6 +28,10 @@ import me.pieking.game.command.CommandRun;
 import me.pieking.game.events.KeyHandler;
 import me.pieking.game.gfx.Fonts;
 import me.pieking.game.gfx.FormattedString;
+import me.pieking.game.interpreter.Jasic;
+import me.pieking.game.net.Client;
+import me.pieking.game.net.Client.SocketStatus;
+import me.pieking.game.sound.Sound;
 
 public class Console extends TextArea{
 	
@@ -73,6 +80,8 @@ public class Console extends TextArea{
 		if(!dir.startsWith("/")) dir = "/" + dir;
 		if(runningCommand != null && runningCommand.wantsInput){
 			prefix = "? ";
+		}else if(runningAC && acWantsInput){
+			prefix = "? ";
 		}else{
 			prefix = "" + (currDir == null ? "" : dir) + "> ";
 		}
@@ -80,6 +89,7 @@ public class Console extends TextArea{
 	
 	@Override
 	public void render(Graphics2D g){
+		g.setFont(Fonts.anonymous.deriveFont((float)fontSize));
 		FormattedString[] str = getLines();
 		int lastOfs = 0;
 		for(int i = 0; i < str.length; i++){
@@ -89,8 +99,6 @@ public class Console extends TextArea{
 			if(i == str.length-1){
 				if(line.getRawString().isEmpty()) continue;
 			}
-			
-			g.setFont(Fonts.anonymous.deriveFont((float)fontSize));
 			
 			int h = height(line, g.getFont());
 			
@@ -232,9 +240,10 @@ public class Console extends TextArea{
 	}
 	
 	public boolean awaitingInput(){
-		if(!canInput ) return false;
+		if(!canInput) return false;
 		if(runningCommand == null) return true;
 		if(runningCommand.wantsInput) return true;
+		if(acWantsInput) return true;
 		return !runningCommand.running;
 	}
 
@@ -242,14 +251,20 @@ public class Console extends TextArea{
 	public void enter(StringBuilder sb) {
 		inputDelay = 10;
 		
-		if(typing.isEmpty()) return;
+		if(typing.trim().isEmpty()) return;
 		
 		cursorIndex = 0;
 		String cmd = typing;
 		sb.setLength(0);
 		
-		if(runningCommand != null && runningCommand.wantsInput){
-			//System.out.println("running in " + cmd);
+		if(runningAC && acWantsInput) {
+			try {
+    			out.write((cmd + "\n").getBytes());
+    			out.flush();
+			}catch (IOException e) {
+				e.printStackTrace();
+			}
+		}else if(runningCommand != null && runningCommand.wantsInput){
 			runningCommand.write(cmd);
 		}else{
     		write(prefix + cmd);
@@ -292,11 +307,19 @@ public class Console extends TextArea{
 	}
 
 	@Override
+	public void scrollToCursor() {
+		// don't scroll to cursor (cancel superclass)
+	}
+	
+	@Override
 	public void type(KeyEvent e) {
 		
 //		System.out.println(inputDelay + " " + awaitingInput());
 		if(Game.keyHandler().isPressed(KeyEvent.VK_CONTROL) && Game.keyHandler().isPressed(KeyEvent.VK_T)){
-			if(runningCommand != null){
+			if(runningAC){
+				cancel.set(true);
+				runningAC = false;
+			}else if(runningCommand != null){
 				if(runningCommand.running) {
 					runningCommand.cancel();
 					runningCommand = null;
@@ -312,6 +335,8 @@ public class Console extends TextArea{
 		}
 		
 		super.type(e);
+		
+		scroll(maxLines);
 		
 	}
 
@@ -381,7 +406,7 @@ public class Console extends TextArea{
 		bootSequence.add("Loading Kernal...");
 		bootSequence.add("Loading Configuration...");
 		
-		int lastDelay = 0;
+		int lastDelay = 30;
 		for(int i = 0; i < bootSequence.size(); i++){
 			final String s = bootSequence.get(i);
 			
@@ -390,26 +415,38 @@ public class Console extends TextArea{
 			
 			Scheduler.delayedTask(() -> {
 				write(s);
-			}, lastDelay += delay);
+			}, lastDelay);
+			lastDelay += delay;
 		}
 		
 		Scheduler.delayedTask(() -> {
 			runCommand("cls");
-		}, lastDelay += Rand.range(50, 110));
+		}, lastDelay);
+		lastDelay += Rand.range(50, 110);
 		
 		boolean hasStartupFile = CommandRun.canRun("startup.jas", this);
 		
 		List<String> bootSequence2 = new ArrayList<String>();
-		bootSequence2.add("Starting " + Game.getName() + " version " + Game.getVersion() + " ...");
+		bootSequence2.add("Starting HackOS version " + Game.getVersion() + " ...");
 		bootSequence2.add("Loading commands...");
+		bootSequence2.add("Connecting to network...");
+		
+		new Thread(Client::init).start();
+		
 		bootSequence2.add("Indexing files...");
 		bootSequence2.add((hasStartupFile ? "Running startup.jas ..." : "No startup.jas found.") + "\n");
 		
+		
 		for(int i = 0; i < bootSequence2.size(); i++){
 			final String s = bootSequence2.get(i);
+			if(s.equals("Connecting to network...")){
+				if(Client.getStatus() != SocketStatus.CONNECTED) bootSequence2.set(i+1, "\\RCould not connect.");
+			}
+			
 			Scheduler.delayedTask(() -> {
 				write(s);
-			}, lastDelay += Rand.range(30, 70));
+			}, lastDelay);
+			lastDelay += Rand.range(30, 70);
 		}
 		
 		Scheduler.delayedTask(() -> {
@@ -422,12 +459,44 @@ public class Console extends TextArea{
 			}catch (InterruptedException e) {}
 			
 			canInput = true;
-		}, lastDelay += Rand.range(50, 110));
+			Sound.startup.stop();
+			Sound.startup.start();
+		}, lastDelay);
+		lastDelay += Rand.range(50, 110);
 //		canInput = true;
 	}
 
 	public void setRunning(Command cmd) {
 		runningCommand = cmd;
+	}
+
+	public boolean runningAC = false;
+	public boolean acWantsInput = false;
+	
+	PipedInputStream in;
+	PipedOutputStream out;
+	AtomicBoolean cancel = new AtomicBoolean(false);
+	
+	public void runDasic(String code) {
+		try {
+			out = new PipedOutputStream();
+			in = new PipedInputStream(out);
+		}catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		new Thread(() -> {
+			cancel.set(false);
+			runningAC = true;
+			try{
+				Jasic.run(code, this, in, cancel);
+			}catch(Exception e){
+				e.printStackTrace();
+				runningAC = false;
+			}
+			runningAC = false;
+			acWantsInput = false;
+		}).start();
 	}
 	
 }

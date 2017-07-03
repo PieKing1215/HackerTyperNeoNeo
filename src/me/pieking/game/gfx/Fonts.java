@@ -31,9 +31,7 @@ public class Fonts {
 		
 		try {
 			is.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		} catch (IOException e) {}
 		
 		return new Font("Arial", 0, 20);
 	}

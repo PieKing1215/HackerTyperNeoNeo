@@ -12,6 +12,7 @@ import java.util.List;
 import me.pieking.game.Game;
 import me.pieking.game.command.Command;
 import me.pieking.game.console.Console;
+import me.pieking.game.sound.Sound;
 
 public class KeyHandler implements KeyListener{
 
@@ -27,7 +28,11 @@ public class KeyHandler implements KeyListener{
 	public static LinkedHashMap<String, Command> commands = new LinkedHashMap<String, Command>();
 	
 	public void keyJustPressed(KeyEvent e){
-		
+		if(e.getKeyCode() == KeyEvent.VK_SPACE || e.getKeyCode() == KeyEvent.VK_ENTER){
+			Sound.type_space.start();
+		}else{
+			Sound.type.start();
+		}
 	}
 	
 	public static Command getCommand(String label){
