@@ -37,7 +37,7 @@ public class Game {
 	private static final int HEIGHT = 600;
 	
 	private static String name = "Hacker Typer Neo NEO";
-	private static String version = "0.0.1-r3";
+	private static String version = "0.0.1-r4";
 	
 	private static boolean running = false;
 	
