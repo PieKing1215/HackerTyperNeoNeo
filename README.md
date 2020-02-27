@@ -1,3 +1,4 @@
+## This project is no longer being developed.
 # HackerTyperNeoNeo
 A repo for a thing by me.
 
